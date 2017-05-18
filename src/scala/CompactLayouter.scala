@@ -1,0 +1,209 @@
+import java.lang.reflect.{Field, Modifier}
+
+import sun.misc.Unsafe
+
+import scala.collection.mutable.{ArrayBuffer, ListBuffer}
+
+case class LayoutField(offset: Long, typ: Class[_], size: Long, name: String)
+
+abstract class CCLInstruction(val index: Int, val comment: String = "")
+
+class CCLReference(index: Int, var offset: Long, var classIndex: Int, comment: String = "")
+  extends CCLInstruction(index, comment) {
+  override def toString: String = s"  REFE $offset, $classIndex"
+}
+
+class CCLInstance(index: Int, val instanceSize: Long, comment: String = "")
+  extends CCLInstruction(index, comment) {
+  override def toString: String = s"CLAS $instanceSize"
+}
+
+class CCLEndOfClass(index: Int, comment: String = "")
+  extends CCLInstruction(index, comment) {
+  override def toString: String = s"EOCL"
+}
+
+class CCLTypeArray(index: Int, val componentSize: Long, comment: String = "")
+  extends CCLInstruction(index, comment) {
+  override def toString: String = s"ATYP $componentSize"
+}
+
+class CCLObjectArray(index: Int, var classIndex: Int, comment: String = "")
+  extends CCLInstruction(index, comment) {
+  override def toString: String = s"AOBJ $classIndex"
+}
+
+object CompactLayouter {
+  private val u: Unsafe = UnsafeInstance.get
+  private val addressBits = u.addressSize.toLong
+
+  def nameToSize(name: String): Byte = name match {
+    case "double" => 8
+    case "long" => 8
+    case "float" => 4
+    case "int" => 4
+    case "short" => 2
+    case "char" => 2
+    case "byte" => 1
+    case "boolean" => 1
+    case _ => throw new Error("unable to extract byte size from type name \"" + name + "\".")
+  }
+
+  def convertClassToLayoutField(klass: Class[_]): Array[LayoutField] = {
+    var fields = ArrayBuffer.empty[LayoutField]
+    if (klass.isArray) {
+      val typ = klass.getComponentType
+      if (typ.isPrimitive) {
+        fields.append(LayoutField(24, klass, nameToSize(typ.getTypeName), "TypeArray"))
+      } else {
+        fields.append(LayoutField(24, klass, addressBits, "ObjArray"))
+      }
+    }
+    else {
+      /*val superKlass = klass.getSuperclass
+      // Superclass fields come first
+      if ((superKlass != classOf[java.lang.Object]) && (superKlass != null)) {
+        fields ++= convertClassToLayoutField(superKlass)
+      }*/
+
+      // Then fields of this class
+      val thisFields = getAllFields(klass)
+      thisFields.foreach { f =>
+        val offset = u.objectFieldOffset(f)
+        val typ = f.getType
+        val size = if (typ.isPrimitive) {
+          nameToSize(f.getType.getTypeName).toLong
+        }
+        else {
+          addressBits
+        }
+        val name = f.getName
+        fields.append(LayoutField(offset, typ, size, name))
+      }
+    }
+    fields.sortBy(f => f.offset).toArray
+  }
+
+  def getSizeAndRefs(fields: Seq[LayoutField]): (Long, Seq[LayoutField]) = {
+    val refonly = ListBuffer.empty[LayoutField]
+    val totalSize = fields.last.offset + fields.last.size
+    fields.foreach { f =>
+      if (!f.typ.isPrimitive) {
+        refonly.append(f)
+      }
+    }
+    (totalSize, refonly.toList)
+  }
+
+  def generateInstructions(klassLayouts: Array[(Class[_], Array[LayoutField])]): Array[CCLInstruction] = {
+    val instructions = ArrayBuffer.empty[CCLInstruction]
+    val klassIndices = ArrayBuffer.empty[Int]
+    var index = 0
+    // We need to make two passes, first to put all instructions in the array
+    // Second pass to update all the class pointers after they've been determined
+    klassLayouts.indices.foreach { kl =>
+      val klass = klassLayouts(kl)._1
+      // Append the current index
+      klassIndices.append(index)
+      if (klassLayouts(kl)._2.nonEmpty) {
+        val (size, refs) = getSizeAndRefs(klassLayouts(kl)._2)
+        // Arrays
+        if (klass.isArray) {
+          val comp = klassLayouts(kl)._2(0)
+          if (klassLayouts(kl)._1.getComponentType.isPrimitive) {
+            instructions.append(new CCLTypeArray(index, comp.size, s"${comp.typ.getName}"))
+            index += 1
+          } else {
+            val klassIndex = klassLayouts.indexWhere(g => g._1 == klass.getComponentType)
+            instructions.append(new CCLObjectArray(index, klassIndex, s"Array[${comp.typ.getComponentType.getName}]"))
+            index += 1
+          }
+          // InstanceKlass
+        } else {
+          instructions.append(new CCLInstance(index, size, klass.getName))
+          index += 1
+          refs.foreach { f =>
+            val klassIndex = klassLayouts.indexWhere(g => g._1 == f.typ)
+            instructions.append(new CCLReference(index, f.offset, klassIndex, s"Ref to ${klassLayouts(klassIndex)._1.getName}"))
+            index += 1
+          }
+        }
+        instructions.append(new CCLEndOfClass(index, "End of class\n"))
+        index += 1
+      }
+    }
+    // A pass over all reference instructions to update the class pointer
+    instructions.foreach { i =>
+      i match {
+        case instr: CCLReference =>
+          instr.classIndex = klassIndices(instr.classIndex)
+        case instr: CCLObjectArray =>
+          instr.classIndex = klassIndices(instr.classIndex)
+        case _ =>
+      }
+    }
+    instructions.toArray
+  }
+
+  def getAllFields(klass: Class[_]): Array[Field] = {
+    var fields = ArrayBuffer.empty[Field]
+    var superKlass = klass
+    while ((superKlass != classOf[java.lang.Object]) && (superKlass != null)) {
+      for (f <- superKlass.getDeclaredFields) {
+        if (!Modifier.isStatic(f.getModifiers) && !Modifier.isTransient(f.getModifiers)) {
+          fields.append(f)
+        }
+      }
+      superKlass = superKlass.getSuperclass
+    }
+    fields.toArray
+  }
+
+  def getAllClasses(klass: Class[_], prev: ArrayBuffer[Class[_]] = null): Array[Class[_]] = {
+    var klasses = if (prev == null) ArrayBuffer[Class[_]](klass) else prev
+    if (klass.isArray) {
+      val compType = klass.getComponentType
+      if (!compType.isPrimitive) {
+        if (!klasses.contains(klass)) {
+          klasses.append(klass)
+        }
+        if (!klasses.contains(compType)) {
+          klasses.append(compType)
+          getAllClasses(compType, klasses)
+        }
+      }
+    }
+    val fields = getAllFields(klass)
+    fields.foreach { f =>
+      val typ = f.getType
+      if (!typ.isPrimitive && !klasses.contains(typ)) {
+        if (!klasses.contains(typ)) {
+          klasses.append(typ)
+          getAllClasses(typ, klasses)
+        }
+      }
+
+    }
+    klasses.toArray
+  }
+
+  def printFields(fields: Seq[LayoutField]): Unit = {
+    fields.foreach(f => println(f"${f.offset}%4d: ${f.typ}%16s[${f.size}%4d]\t(${f.name})"))
+  }
+
+  def convertInstructionsToString(instructions: Array[CCLInstruction]): String = {
+    val s: StringBuffer = new StringBuffer(512)
+    instructions.foreach { i =>
+      s.append(f"${i.index}%4d: $i%-16s # ${i.comment}\n")
+    }
+    s.toString
+  }
+
+  def assembleCompactClassLayout(obj: AnyRef): String = {
+    val klasses = getAllClasses(obj.getClass)
+    // Somehow we need to explicitly define this type:
+    val klassLayouts: Array[(Class[_], Array[LayoutField])] = klasses.map(k => (k, convertClassToLayoutField(k)))
+    val instructions = generateInstructions(klassLayouts)
+    convertInstructionsToString(instructions)
+  }
+}
