@@ -1,2 +1,11 @@
 *.iml
-
+/.idea/
+/out/
+/fpga/work/
+*.mti
+*.mpf
+*.wlf
+*.geany
+*.do
+*.bak
+/fpga/vivado/jor/jor.*

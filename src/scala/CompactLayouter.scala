@@ -13,7 +13,7 @@ class CCLReference(index: Int, var offset: Long, var classIndex: Int, comment: S
   override def toString: String = s"  REFE $offset, $classIndex"
 }
 
-class CCLInstance(index: Int, val instanceSize: Long, comment: String = "")
+class CCLClass(index: Int, val instanceSize: Long, comment: String = "")
   extends CCLInstruction(index, comment) {
   override def toString: String = s"CLAS $instanceSize"
 }
@@ -120,7 +120,7 @@ object CompactLayouter {
           }
           // InstanceKlass
         } else {
-          instructions.append(new CCLInstance(index, size, klass.getName))
+          instructions.append(new CCLClass(index, size, klass.getName))
           index += 1
           refs.foreach { f =>
             val klassIndex = klassLayouts.indexWhere(g => g._1 == f.typ)
@@ -128,7 +128,7 @@ object CompactLayouter {
             index += 1
           }
         }
-        instructions.append(new CCLEndOfClass(index, "End of class\n"))
+        instructions.append(new CCLEndOfClass(index, "End of class"))
         index += 1
       }
     }
@@ -191,6 +191,24 @@ object CompactLayouter {
     fields.foreach(f => println(f"${f.offset}%4d: ${f.typ}%16s[${f.size}%4d]\t(${f.name})"))
   }
 
+  def convertInstructionsToVHDL(instructions: Array[CCLInstruction]): String = {
+    val s: StringBuffer = new StringBuffer(512)
+    var index = 0
+    instructions.foreach {i =>
+      val append = i match {
+        case c : CCLClass       => f"$index%4d => " + """"""" + f"${c.instanceSize.toBinaryString.toInt}%032d"                                                         + """",""" + f" --${c.index}%4d: $c%-16s # ${c.comment}\n"
+        case c : CCLReference   => f"$index%4d => " + """"""" + f"100" + f"${c.offset.toBinaryString.toInt}%021d"        + f"${c.classIndex.toBinaryString.toInt}%08d" + """",""" + f" --${c.index}%4d: $c%-16s # ${c.comment}\n"
+        case c : CCLObjectArray => f"$index%4d => " + """"""" + f"101" + f"${0}%021d"                                    + f"${c.classIndex.toBinaryString.toInt}%08d" + """",""" + f" --${c.index}%4d: $c%-16s # ${c.comment}\n"
+        case c : CCLTypeArray   => f"$index%4d => " + """"""" + f"111" + f"${c.componentSize.toBinaryString.toInt}%021d" + f"${0}%08d"                                 + """",""" + f" --${c.index}%4d: $c%-16s # ${c.comment}\n"
+        case c : CCLEndOfClass  => f"$index%4d => " + """"""" + f"110" + f"000000000000000000000"                        + f"00000000"                                 + """",""" + f" --${c.index}%4d: $c%-16s # ${c.comment}\n"
+        case _ => f"ERROR"
+      }
+      s.append(append)
+      index = index + 1;
+    }
+    s.toString
+  }
+
   def convertInstructionsToString(instructions: Array[CCLInstruction]): String = {
     val s: StringBuffer = new StringBuffer(512)
     instructions.foreach { i =>
@@ -199,11 +217,10 @@ object CompactLayouter {
     s.toString
   }
 
-  def assembleCompactClassLayout(obj: AnyRef): String = {
+  def generateCompactClassLayoutInstructions(obj: AnyRef): Array[CCLInstruction] = {
     val klasses = getAllClasses(obj.getClass)
     // Somehow we need to explicitly define this type:
     val klassLayouts: Array[(Class[_], Array[LayoutField])] = klasses.map(k => (k, convertClassToLayoutField(k)))
-    val instructions = generateInstructions(klassLayouts)
-    convertInstructionsToString(instructions)
+    generateInstructions(klassLayouts)
   }
 }
