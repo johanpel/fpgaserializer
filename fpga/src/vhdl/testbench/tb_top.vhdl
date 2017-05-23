@@ -10,17 +10,6 @@ end tb_top;
 
 architecture tb of tb_top is
 
-    component top
-        port (clk   : in std_logic;
-              rst   : in std_logic;
-              start : in std_logic;
-              busy  : out std_logic;
-              done  : out std_logic;
-              error : out std_logic;
-              init_cr : unsigned(JOR_HOST_ADDR_BITS-1 downto 0)
-              );
-    end component;
-
     signal clk   : std_logic;
     signal rst   : std_logic;
     signal start : std_logic;
@@ -28,6 +17,8 @@ architecture tb of tb_top is
     signal done  : std_logic;
     signal error : std_logic;
     signal init_cr : unsigned(JOR_HOST_ADDR_BITS-1 downto 0);
+    signal dh_o_tb : data_handler_out := data_handler_out_init;
+    signal dh_i_tb : data_handler_in := data_handler_in_init;
 
     constant tb_period : time := 100 ns;
     signal tb_clk : std_logic := '0';
@@ -35,17 +26,33 @@ architecture tb of tb_top is
 
 begin
 
-    dut : top
+    dut : entity work.top
     port map (clk     => clk,
               rst     => rst,
               start   => start,
               busy    => busy,
               done    => done,
               error   => error,
-              init_cr => init_cr);
+              init_cr => init_cr,
+              dh_o_tb => dh_o_tb,
+              dh_i_tb => dh_i_tb);
 
     tb_clk <= not tb_clk after tb_period/2 when tb_end /= '1' else '0';
     clk <= tb_clk;
+
+    datahandler : process
+    begin
+      if tb_end = '0' then
+        wait until dh_i_tb.valid = '1';
+        wait for (to_integer(unsigned(dh_i_tb.size))/8+1)*tb_period;
+        dh_o_tb.id <= dh_i_tb.id;
+        dh_o_tb.done <= '1';
+        wait for tb_period;
+        dh_o_tb.done <= '0';
+      else
+        wait;
+      end if;
+    end process;
 
     stimuli : process
     begin
@@ -53,7 +60,7 @@ begin
         init_cr <= X"FEDCBA9800000000";
 
         rst <= '1';
-        wait for tb_period;
+        wait for tb_period + tb_period/2;
         rst <= '0';
         wait for tb_period;
 

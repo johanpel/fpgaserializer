@@ -33,8 +33,9 @@ begin
   o.full  <= full;
   
   -- Get output from index:
-  with index select o.data <= items(0)       when 0,
-                              items(index-1) when others;
+  with index select o.data <=
+    items(0)       when 0,
+    items(index-1) when others;
   
   -- Popping and pushing:
   process(i.clk)

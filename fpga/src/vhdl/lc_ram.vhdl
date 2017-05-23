@@ -7,9 +7,9 @@ library work;
 
 -- Simple Dual-Port Ram Dual Clocks
 -- According to Xilinx UG901
-entity ccl_ram is
+entity lc_ram is
   generic(
-    CCL_RAM_INIT : ccl_ram_type := (others => (others => '0'))
+    LC_RAM_INIT : lc_ram_type := (others => (others => '0'))
   );
   port(
     clka  : in std_logic;
@@ -17,15 +17,15 @@ entity ccl_ram is
     ena   : in std_logic;
     enb   : in std_logic;
     wea   : in std_logic;
-    addra : in std_logic_vector(JOR_CCL_ADDR_BITS-1 downto 0);
-    addrb : in std_logic_vector(JOR_CCL_ADDR_BITS-1 downto 0);
-    dia   : in std_logic_vector(JOR_CCL_INSTR_SIZE-1 downto 0);
-    dob   : out std_logic_vector(JOR_CCL_INSTR_SIZE-1 downto 0)
+    addra : in std_logic_vector(JOR_LC_ADDR_BITS-1 downto 0);
+    addrb : in std_logic_vector(JOR_LC_ADDR_BITS-1 downto 0);
+    dia   : in std_logic_vector(JOR_LC_RAM_WIDTH-1 downto 0);
+    dob   : out std_logic_vector(JOR_LC_RAM_WIDTH-1 downto 0)
   );
-end ccl_ram;
+end lc_ram;
 
-architecture rtl of ccl_ram is
-  shared variable RAM : ccl_ram_type := CCL_RAM_INIT;
+architecture rtl of lc_ram is
+  shared variable RAM : lc_ram_type := LC_RAM_INIT;
 begin
 
   -- Write Port A

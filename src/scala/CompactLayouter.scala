@@ -198,7 +198,7 @@ object CompactLayouter {
       val append = i match {
         case c : CCLClass       => f"$index%4d => " + """"""" + f"${c.instanceSize.toBinaryString.toInt}%032d"                                                         + """",""" + f" --${c.index}%4d: $c%-16s # ${c.comment}\n"
         case c : CCLReference   => f"$index%4d => " + """"""" + f"100" + f"${c.offset.toBinaryString.toInt}%021d"        + f"${c.classIndex.toBinaryString.toInt}%08d" + """",""" + f" --${c.index}%4d: $c%-16s # ${c.comment}\n"
-        case c : CCLObjectArray => f"$index%4d => " + """"""" + f"101" + f"${0}%021d"                                    + f"${c.classIndex.toBinaryString.toInt}%08d" + """",""" + f" --${c.index}%4d: $c%-16s # ${c.comment}\n"
+        case c : CCLObjectArray => f"$index%4d => " + """"""" + f"101" + f"${addressBits/8}%021d"                        + f"${c.classIndex.toBinaryString.toInt}%08d" + """",""" + f" --${c.index}%4d: $c%-16s # ${c.comment}\n"
         case c : CCLTypeArray   => f"$index%4d => " + """"""" + f"111" + f"${c.componentSize.toBinaryString.toInt}%021d" + f"${0}%08d"                                 + """",""" + f" --${c.index}%4d: $c%-16s # ${c.comment}\n"
         case c : CCLEndOfClass  => f"$index%4d => " + """"""" + f"110" + f"000000000000000000000"                        + f"00000000"                                 + """",""" + f" --${c.index}%4d: $c%-16s # ${c.comment}\n"
         case _ => f"ERROR"

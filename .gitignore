@@ -8,4 +8,5 @@
 *.geany
 *.do
 *.bak
-/fpga/vivado/jor/jor.*
+/fpga/vivado/
+/fpga/modelsim/
