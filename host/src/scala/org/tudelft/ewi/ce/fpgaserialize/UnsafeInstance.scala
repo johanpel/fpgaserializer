@@ -1,3 +1,5 @@
+package org.tudelft.ewi.ce.fpgaserialize
+
 import sun.misc.Unsafe
 
 object UnsafeInstance {

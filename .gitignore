@@ -10,3 +10,5 @@
 *.bak
 /fpga/vivado/
 /fpga/modelsim/
+/host/*
+!/host/src

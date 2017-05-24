@@ -1,12 +1,7 @@
-import java.io.{FileOutputStream, ObjectInputStream, ObjectOutputStream, StringBufferInputStream}
+package org.tudelft.ewi.ce.fpgaserialize
 
-import org.openjdk.jol._
-import org.openjdk.jol.datamodel.{X86_64_COOPS_DataModel, X86_64_DataModel}
 import org.openjdk.jol.info.ClassLayout
-import org.openjdk.jol.layouters.{CurrentLayouter, HotSpotLayouter}
-import sun.misc.Unsafe
-
-import scala.util.Random
+import org.openjdk.jol.layouters.CurrentLayouter
 
 class VectorWithNorms(val norm: Double, val values: Array[Double])
 
@@ -18,11 +13,9 @@ class Y(val e: Int, val f: Char, val g: Array[Int], val h : Array[VectorWithNorm
 
 
 class leaf (val a: Int, val b: Int, val c: Int)
-class root (val d: leaf, val e: Array[Int])
+class root (val d: leaf, val e: Array[Byte])
 
 object fpgaserialize {
-
-  //@native def serializeNative(obj: AnyRef)
 
   def main(args: Array[String]): Unit = {
 
@@ -44,14 +37,20 @@ object fpgaserialize {
     val o = Seq[X](n,n,n,n).toArray
     println(ClassLayout.parseClass(o.getClass, lay).toPrintable)
     println(CompactLayouter.convertInstructionsToVHDL(CompactLayouter.generateCompactClassLayoutInstructions(o)))
-
+*/
     val a = new leaf(1,2,3)
-    val b = Array.fill[Int](8)(0xDEADBEEF)
+    val b = Array.fill[Int](8)(0xAABBCCDD)
     val c = new root(a,b)
     println(CompactLayouter.convertInstructionsToVHDL(CompactLayouter.generateCompactClassLayoutInstructions(c)))
-    */
+    SerializerSimulator.serializeObject(c)
 
+    println(ClassLayout.parseClass(a.getClass, lay).toPrintable)
+    println(ClassLayout.parseClass(b.getClass, lay).toPrintable)
+    println(ClassLayout.parseClass(c.getClass, lay).toPrintable)
+
+/*
     val a = Array.fill[leaf](4)(new leaf(1,2,3))
     println(CompactLayouter.convertInstructionsToVHDL(CompactLayouter.generateCompactClassLayoutInstructions(a)))
+    */
   }
 }

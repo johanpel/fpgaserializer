@@ -1,8 +1,8 @@
 #include <stdint.h>
 #include <jni.h>
 
-#ifndef SRC_FASTSERIALIZE_H_
-#define SRC_FASTSERIALIZE_H_
+#ifndef SRC_FPGASERIALIZE_H_
+#define SRC_FPGASERIALIZE_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -49,10 +49,10 @@ static inline int getArrayElements(char * oop) {
   return *(int*)&oop[16];
 }
 
-JNIEXPORT void JNICALL Java_fpgaserialize_00024_serializeNative (JNIEnv *, jobject, jobject);
+JNIEXPORT void JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_SerializerSimulator_00024_printObjectMemory(JNIEnv *, jobject, jobject);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* SRC_FASTSERIALIZE_H_ */
+#endif /* SRC_FPGASERIALIZE_H_ */

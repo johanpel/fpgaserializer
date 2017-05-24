@@ -1,4 +1,4 @@
-import java.lang.reflect.{Field, Modifier}
+package org.tudelft.ewi.ce.fpgaserialize
 
 import sun.misc.Unsafe
 
@@ -67,7 +67,7 @@ object CompactLayouter {
       }*/
 
       // Then fields of this class
-      val thisFields = getAllFields(klass)
+      val thisFields = ReflectionHelper.getAllFields(klass)
       thisFields.foreach { f =>
         val offset = u.objectFieldOffset(f)
         val typ = f.getType
@@ -120,7 +120,8 @@ object CompactLayouter {
           }
           // InstanceKlass
         } else {
-          instructions.append(new CCLClass(index, size, klass.getName))
+          val alignedsize = if (size % 8 == 0) size else size + 8 - (size % 8)
+          instructions.append(new CCLClass(index, alignedsize, klass.getName))
           index += 1
           refs.foreach { f =>
             val klassIndex = klassLayouts.indexWhere(g => g._1 == f.typ)
@@ -133,58 +134,14 @@ object CompactLayouter {
       }
     }
     // A pass over all reference instructions to update the class pointer
-    instructions.foreach { i =>
-      i match {
-        case instr: CCLReference =>
-          instr.classIndex = klassIndices(instr.classIndex)
-        case instr: CCLObjectArray =>
-          instr.classIndex = klassIndices(instr.classIndex)
-        case _ =>
-      }
+    instructions foreach {
+      case instr: CCLReference =>
+        instr.classIndex = klassIndices(instr.classIndex)
+      case instr: CCLObjectArray =>
+        instr.classIndex = klassIndices(instr.classIndex)
+      case _ =>
     }
     instructions.toArray
-  }
-
-  def getAllFields(klass: Class[_]): Array[Field] = {
-    var fields = ArrayBuffer.empty[Field]
-    var superKlass = klass
-    while ((superKlass != classOf[java.lang.Object]) && (superKlass != null)) {
-      for (f <- superKlass.getDeclaredFields) {
-        if (!Modifier.isStatic(f.getModifiers) && !Modifier.isTransient(f.getModifiers)) {
-          fields.append(f)
-        }
-      }
-      superKlass = superKlass.getSuperclass
-    }
-    fields.toArray
-  }
-
-  def getAllClasses(klass: Class[_], prev: ArrayBuffer[Class[_]] = null): Array[Class[_]] = {
-    var klasses = if (prev == null) ArrayBuffer[Class[_]](klass) else prev
-    if (klass.isArray) {
-      val compType = klass.getComponentType
-      if (!compType.isPrimitive) {
-        if (!klasses.contains(klass)) {
-          klasses.append(klass)
-        }
-        if (!klasses.contains(compType)) {
-          klasses.append(compType)
-          getAllClasses(compType, klasses)
-        }
-      }
-    }
-    val fields = getAllFields(klass)
-    fields.foreach { f =>
-      val typ = f.getType
-      if (!typ.isPrimitive && !klasses.contains(typ)) {
-        if (!klasses.contains(typ)) {
-          klasses.append(typ)
-          getAllClasses(typ, klasses)
-        }
-      }
-
-    }
-    klasses.toArray
   }
 
   def printFields(fields: Seq[LayoutField]): Unit = {
@@ -218,7 +175,7 @@ object CompactLayouter {
   }
 
   def generateCompactClassLayoutInstructions(obj: AnyRef): Array[CCLInstruction] = {
-    val klasses = getAllClasses(obj.getClass)
+    val klasses = ReflectionHelper.getAllClasses(obj.getClass)
     // Somehow we need to explicitly define this type:
     val klassLayouts: Array[(Class[_], Array[LayoutField])] = klasses.map(k => (k, convertClassToLayoutField(k)))
     generateInstructions(klassLayouts)

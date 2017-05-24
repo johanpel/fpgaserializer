@@ -20,7 +20,8 @@ architecture tb of tb_top is
     signal dh_o_tb : data_handler_out := data_handler_out_init;
     signal dh_i_tb : data_handler_in := data_handler_in_init;
 
-    constant tb_period : time := 100 ns;
+    constant tb_period : time := 4 ns;
+    constant tb_host_latency : integer := 1;
     signal tb_clk : std_logic := '0';
     signal tb_end : std_logic := '0';
 
@@ -44,7 +45,7 @@ begin
     begin
       if tb_end = '0' then
         wait until dh_i_tb.valid = '1';
-        wait for (to_integer(unsigned(dh_i_tb.size))/8+1)*tb_period;
+        wait for (to_integer(unsigned(dh_i_tb.size))/8+tb_host_latency)*tb_period;
         dh_o_tb.id <= dh_i_tb.id;
         dh_o_tb.done <= '1';
         wait for tb_period;
@@ -57,12 +58,15 @@ begin
     stimuli : process
     begin
         start <= '0';
-        init_cr <= X"FEDCBA9800000000";
+        init_cr <= X"00007F8F6ACC17C8";
 
         rst <= '1';
         wait for tb_period + tb_period/2;
         rst <= '0';
         wait for tb_period;
+        start <= '1';
+        wait for tb_period;
+        start <= '0';
 
         wait for 100*tb_period;
 

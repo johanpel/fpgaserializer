@@ -5,7 +5,7 @@
 #include <math.h>
 #include <omp.h>
 
-#include "fastserialize.h"
+#include "fpgaserialize.h"
 
 void printBytes(FILE * f, void * data, int bytes)
 {
@@ -23,31 +23,32 @@ void printHexEditorView(FILE * f, void * data, int bytes)
 
   fflush(f);
 
-  fprintf(f, "  |");
-  for (int i = 0; i < 16; i++)
+  /*fprintf(f, "  |");
+  for (int i = 0; i < 8; i++)
     fprintf(f, "%02X|", i);
   fprintf(f, "\n");
+
   fprintf(f, "  |");
-  for (int i = 0; i < 16; i++)
+  for (int i = 0; i < 8; i++)
     fprintf(f, "--|");
   fprintf(f, "\n");
-
+*/
   int i = 0;
   while (bytes > 0) {
-    fprintf(f, "%02X|", i / 16);
-    for (int j = 0; (j < 16) && (bytes > 0); j++) {
-      fprintf(f, "%02X|", d[i]);
+    fprintf(f, "%02X => X\"", i / 8);
+    for (int j = 0; (j < 8) && (bytes > 0); j++) {
+      fprintf(f, "%02X", d[i]);
       i++;
       bytes--;
     }
-    fprintf(f, "\n");
+    fprintf(f, "\",\n");
   }
   fflush(f);
 }
 
-JNIEXPORT void JNICALL Java_fpgaserialize_00024_serializeNative(JNIEnv * env, jobject this, jobject handle)
+JNIEXPORT void JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_SerializerSimulator_00024_printObjectMemory(JNIEnv * env, jobject this, jobject handle)
 {
-  fprintf(stderr, "JNI Handle: %016lX - Data: %016lX\n", (long)handle, *(long*)handle);
+  //fprintf(stderr, "JNI Handle: %016lX - Data: %016lX\n", (long)handle, *(long*)handle);
 
   // JNI functions use JNI handles which are not OOPs. It must first be resolved.
   char* oop = resolveJNIHandle(handle);
@@ -55,7 +56,7 @@ JNIEXPORT void JNICALL Java_fpgaserialize_00024_serializeNative(JNIEnv * env, jo
   int array = isArray(klass);
   int header_size = 16 + 4 * array;
   int size = getInstanceSizeOrElementSize(klass);
-  char * super = getSuperKlass(klass);
+  //char * super = getSuperKlass(klass);
   int elementsize = size;
   int array_elements = 0;
   int header_gap = 0;
@@ -75,25 +76,26 @@ JNIEXPORT void JNICALL Java_fpgaserialize_00024_serializeNative(JNIEnv * env, jo
   */
 
   fprintf(stderr, "OOP: %016lX\n", (long)oop);
-  fprintf(stderr, "Klass: %016lX\n", (long)klass);
-  fprintf(stderr, "Super: %016lX\n", (long)super);
-  fprintf(stderr, "Array: %d\n", array);
-  fprintf(stderr, "Header size: %d\n", header_size);
-  fprintf(stderr, "Size: %d\n", size);
-  if (array) {
-    fprintf(stderr, "Element size: %d\n", elementsize);
-    fprintf(stderr, "Array Elements: %d\n", array_elements);
-    fprintf(stderr, "Header alignment gap: %d\n", header_gap);
-  }
+  //fprintf(stderr, "Klass: %016lX\n", (long)klass);
+  //fprintf(stderr, "Super: %016lX\n", (long)super);
+  //fprintf(stderr, "Array: %d\n", array);
+  //fprintf(stderr, "Header size: %d\n", header_size);
+  //fprintf(stderr, "Size: %d\n", size);
+  //if (array) {
+//    fprintf(stderr, "Element size: %d\n", elementsize);
+    //fprintf(stderr, "Array Elements: %d\n", array_elements);
+    //fprintf(stderr, "Header alignment gap: %d\n", header_gap);
+  //}
 
   printHexEditorView(stderr, oop, size);
 
-  fprintf(stderr, "InstanceKlass pointer: %016lX\n", *(long*)&oop[8]);
+  /*fprintf(stderr, "InstanceKlass pointer: %016lX\n", *(long*)&oop[8]);
   fprintf(stderr, "InstanceKlass contents:\n");
   printHexEditorView(stderr, klass, 128);
   fprintf(stderr, "Instance size: %08X\n", size);
 
-  fprintf(stderr, "\n");
+  fprintf(stderr, "\n");*/
+
   fflush(stderr);
 
   return;
