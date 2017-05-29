@@ -75,7 +75,7 @@ JNIEXPORT void JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_SerializerSimulator
   }
   */
 
-  fprintf(stderr, "OOP: %016lX\n", (long)oop);
+  fprintf(stdout, "OOP: %016lX\n", (long)oop);
   //fprintf(stderr, "Klass: %016lX\n", (long)klass);
   //fprintf(stderr, "Super: %016lX\n", (long)super);
   //fprintf(stderr, "Array: %d\n", array);
@@ -87,7 +87,7 @@ JNIEXPORT void JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_SerializerSimulator
     //fprintf(stderr, "Header alignment gap: %d\n", header_gap);
   //}
 
-  printHexEditorView(stderr, oop, size);
+  printHexEditorView(stdout, oop, size);
 
   /*fprintf(stderr, "InstanceKlass pointer: %016lX\n", *(long*)&oop[8]);
   fprintf(stderr, "InstanceKlass contents:\n");

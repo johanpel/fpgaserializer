@@ -3,54 +3,46 @@ package org.tudelft.ewi.ce.fpgaserialize
 import org.openjdk.jol.info.ClassLayout
 import org.openjdk.jol.layouters.CurrentLayouter
 
-class VectorWithNorms(val norm: Double, val values: Array[Double])
-
-class SomeRandomClass(val a : Long, val b : Object, val c : Int, val d : Object)
-class ExtendedClass(val e : Short, val f : Object, val g : Byte, val h : Object, i : Object, j : Object)
-  extends SomeRandomClass(0xDEADBEEFL,i,0x8BADF00D,j)
-class X(val a: Long, val b: Int, val c: Y, val d: Y) extends Serializable
-class Y(val e: Int, val f: Char, val g: Array[Int], val h : Array[VectorWithNorms]) extends Serializable
-
-
-class leaf (val a: Int, val b: Int, val c: Int)
-class root (val d: leaf, val e: Array[Byte])
+class someClass(val a: Int, val b: Int, val c: Array[Int])
 
 object fpgaserialize {
 
   def main(args: Array[String]): Unit = {
 
     val lay = new CurrentLayouter()
-    /*
-    val v = new VectorWithNorms(-3.7206620809969885439391603375E-103, Array(-5.87276176762981513250835401879E-21, -5.87276176762981513250835401879E-21, -5.87276176762981513250835401879E-21))
-    val s = Seq.fill[VectorWithNorms](4)(new VectorWithNorms(Random.nextDouble,Array(Random.nextDouble, Random.nextDouble, Random.nextDouble)))
-    val r = new SomeRandomClass(0x12345678L,v,0xABCDEF12,v)
-    val e = new ExtendedClass(0xDEAD.toShort,r,0xAA.toByte,r,r,r)
 
+    val a0 = Array[Int](0x33333333,0x33333333)
+    val a1 = Array[Int](0x66666666)
+    val a2 = Array[Int](0x99999999,0x99999999,0x99999999)
+    val a3 = Array[Int](0xCCCCCCCC,0xCCCCCCCC,0xCCCCCCCC, 0xCCCCCCCC)
 
-    val a = Array.fill[Int](128)(0xDEADBEEF)
-    val i = Array(0xA, 0xB, 0xC, 0xD)
-    val j = Array(0xE, 0xF)
-    val k = Array.fill(0)(new VectorWithNorms(Random.nextDouble,Array(Random.nextDouble, Random.nextDouble, Random.nextDouble)))
-    val l = new Y(3,'l', i, k)
-    val m = new Y(4,'m', j, k)
-    val n = new X(1L, 2, l, m)
-    val o = Seq[X](n,n,n,n).toArray
-    println(ClassLayout.parseClass(o.getClass, lay).toPrintable)
-    println(CompactLayouter.convertInstructionsToVHDL(CompactLayouter.generateCompactClassLayoutInstructions(o)))
-*/
-    val a = new leaf(1,2,3)
-    val b = Array.fill[Int](8)(0xAABBCCDD)
-    val c = new root(a,b)
-    println(CompactLayouter.convertInstructionsToVHDL(CompactLayouter.generateCompactClassLayoutInstructions(c)))
-    SerializerSimulator.serializeObject(c)
+    val sc0 = new someClass(0x11111111, 0x22222222, a0)
+    val sc1 = new someClass(0x44444444, 0x55555555, a1)
+    val sc2 = new someClass(0x77777777, 0x88888888, a2)
+    val sc3 = new someClass(0xAAAAAAAA, 0xBBBBBBBB, a3)
 
-    println(ClassLayout.parseClass(a.getClass, lay).toPrintable)
-    println(ClassLayout.parseClass(b.getClass, lay).toPrintable)
-    println(ClassLayout.parseClass(c.getClass, lay).toPrintable)
+    val oa0 = Array[someClass](sc0, sc1)
+    val oa1 = Array[someClass](sc2, sc3)
+    val ooa = Array[Array[someClass]](oa0,oa1)
 
-/*
-    val a = Array.fill[leaf](4)(new leaf(1,2,3))
-    println(CompactLayouter.convertInstructionsToVHDL(CompactLayouter.generateCompactClassLayoutInstructions(a)))
-    */
+    println(CompactLayouter.convertInstructionsToVHDL(CompactLayouter.generateCompactClassLayoutInstructions(ooa)))
+    SerializerSimulator.serializeObject(ooa)
+      SerializerSimulator.serializeObject(oa0)
+        SerializerSimulator.serializeObject(sc0)
+          SerializerSimulator.serializeObject(a0)
+        SerializerSimulator.serializeObject(sc1)
+          SerializerSimulator.serializeObject(a1)
+      SerializerSimulator.serializeObject(oa1)
+        SerializerSimulator.serializeObject(sc2)
+          SerializerSimulator.serializeObject(a2)
+        SerializerSimulator.serializeObject(sc3)
+          SerializerSimulator.serializeObject(a3)
+
+    println(ClassLayout.parseClass(ooa.getClass, lay).toPrintable)
+    println(ClassLayout.parseClass(classOf[someClass], lay).toPrintable)
+    println(ClassLayout.parseClass(classOf[Array[Int]], lay).toPrintable)
+    println(ClassLayout.parseClass(sc3.getClass, lay).toPrintable)
+    println(ClassLayout.parseClass(a3.getClass, lay).toPrintable)
+
   }
 }

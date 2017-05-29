@@ -35,7 +35,7 @@ class CCLObjectArray(index: Int, var classIndex: Int, comment: String = "")
 
 object CompactLayouter {
   private val u: Unsafe = UnsafeInstance.get
-  private val addressBits = u.addressSize.toLong
+  private val addressBytes = u.addressSize.toLong
 
   def nameToSize(name: String): Byte = name match {
     case "double" => 8
@@ -56,7 +56,7 @@ object CompactLayouter {
       if (typ.isPrimitive) {
         fields.append(LayoutField(24, klass, nameToSize(typ.getTypeName), "TypeArray"))
       } else {
-        fields.append(LayoutField(24, klass, addressBits, "ObjArray"))
+        fields.append(LayoutField(24, klass, addressBytes, "ObjArray"))
       }
     }
     else {
@@ -75,7 +75,7 @@ object CompactLayouter {
           nameToSize(f.getType.getTypeName).toLong
         }
         else {
-          addressBits
+          addressBytes
         }
         val name = f.getName
         fields.append(LayoutField(offset, typ, size, name))
@@ -155,7 +155,7 @@ object CompactLayouter {
       val append = i match {
         case c : CCLClass       => f"$index%4d => " + """"""" + f"${c.instanceSize.toBinaryString.toInt}%032d"                                                         + """",""" + f" --${c.index}%4d: $c%-16s # ${c.comment}\n"
         case c : CCLReference   => f"$index%4d => " + """"""" + f"100" + f"${c.offset.toBinaryString.toInt}%021d"        + f"${c.classIndex.toBinaryString.toInt}%08d" + """",""" + f" --${c.index}%4d: $c%-16s # ${c.comment}\n"
-        case c : CCLObjectArray => f"$index%4d => " + """"""" + f"101" + f"${addressBits/8}%021d"                        + f"${c.classIndex.toBinaryString.toInt}%08d" + """",""" + f" --${c.index}%4d: $c%-16s # ${c.comment}\n"
+        case c : CCLObjectArray => f"$index%4d => " + """"""" + f"101" + f"${addressBytes.toBinaryString.toInt}%021d"    + f"${c.classIndex.toBinaryString.toInt}%08d" + """",""" + f" --${c.index}%4d: $c%-16s # ${c.comment}\n"
         case c : CCLTypeArray   => f"$index%4d => " + """"""" + f"111" + f"${c.componentSize.toBinaryString.toInt}%021d" + f"${0}%08d"                                 + """",""" + f" --${c.index}%4d: $c%-16s # ${c.comment}\n"
         case c : CCLEndOfClass  => f"$index%4d => " + """"""" + f"110" + f"000000000000000000000"                        + f"00000000"                                 + """",""" + f" --${c.index}%4d: $c%-16s # ${c.comment}\n"
         case _ => f"ERROR"

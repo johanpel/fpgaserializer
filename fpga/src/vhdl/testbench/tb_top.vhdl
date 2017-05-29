@@ -1,9 +1,10 @@
 library ieee;
   use ieee.std_logic_1164.all;
   use ieee.numeric_std.all;
-  
+
 library work;
   use work.jor.all;
+  use work.tb_rams.all;
 
 entity tb_top is
 end tb_top;
@@ -45,11 +46,11 @@ begin
     begin
       if tb_end = '0' then
         wait until dh_i_tb.valid = '1';
+        wait for tb_period;
+        dh_o_tb.done <= '0';
         wait for (to_integer(unsigned(dh_i_tb.size))/8+tb_host_latency)*tb_period;
         dh_o_tb.id <= dh_i_tb.id;
         dh_o_tb.done <= '1';
-        wait for tb_period;
-        dh_o_tb.done <= '0';
       else
         wait;
       end if;
@@ -58,7 +59,7 @@ begin
     stimuli : process
     begin
         start <= '0';
-        init_cr <= X"00007F8F6ACC17C8";
+        init_cr <= CR_TESTBENCH;
 
         rst <= '1';
         wait for tb_period + tb_period/2;
@@ -68,7 +69,7 @@ begin
         wait for tb_period;
         start <= '0';
 
-        wait for 100*tb_period;
+        wait until done = '1';
 
         tb_end <= '1';
         wait;
