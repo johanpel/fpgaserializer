@@ -144,7 +144,8 @@ begin
 
   -- Helper signals:
   instruction       <= ccl_o.dob;
-  offset            <= unsigned(instruction(JOR_REFE_OFFSET_HI downto JOR_REFE_OFFSET_LO)) / JOR_LC_RAM_WIDTH_BYTES;
+  offset            <= unsigned(instruction(JOR_REFE_OFFSET_HI downto JOR_REFE_OFFSET_LO)) 
+                      / JOR_LC_RAM_WIDTH_BYTES;
   clas_size         <= unsigned(instruction(JOR_LC_ADDR_BITS-1 downto 0));
 
   -- Instruction processing logic

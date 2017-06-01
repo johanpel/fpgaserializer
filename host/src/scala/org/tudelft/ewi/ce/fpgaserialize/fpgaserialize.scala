@@ -14,13 +14,13 @@ class someClass(val a: Int, val b: Int, val c: Array[Int])
 
 object fpgaserialize {
 
-  def testAll() : Unit = {
+  def clas_atyp_aobj() : Unit = {
     val lay = new CurrentLayouter()
-
-    val a0 = Array[Int](0x33333333,0x33333333)
+    
+    val a0 = Array[Int](0x33333333, 0x33333333)
     val a1 = Array[Int](0x66666666)
-    val a2 = Array[Int](0x99999999,0x99999999,0x99999999)
-    val a3 = Array[Int](0xCCCCCCCC,0xCCCCCCCC,0xCCCCCCCC, 0xCCCCCCCC)
+    val a2 = Array[Int](0x99999999, 0x99999999, 0x99999999)
+    val a3 = Array[Int](0xCCCCCCCC, 0xCCCCCCCC, 0xCCCCCCCC, 0xCCCCCCCC)
 
     val sc0 = new someClass(0x11111111, 0x22222222, a0)
     val sc1 = new someClass(0x44444444, 0x55555555, a1)
@@ -29,7 +29,7 @@ object fpgaserialize {
 
     val oa0 = Array[someClass](sc0, sc1)
     val oa1 = Array[someClass](sc2, sc3)
-    val ooa = Array[Array[someClass]](oa0,oa1)
+    val ooa = Array[Array[someClass]](oa0, oa1)
 
     println(CompactLayouter.convertInstructionsToVHDL(CompactLayouter.generateCompactClassLayoutInstructions(ooa)))
     SerializerSimulator.serializeObject(ooa)
