@@ -115,7 +115,7 @@ object CompactLayouter {
             index += 1
           } else {
             val klassIndex = klassLayouts.indexWhere(g => g._1 == klass.getComponentType)
-            instructions.append(new CCLObjectArray(index, klassIndex, s"Array[${comp.typ.getComponentType.getName}]"))
+            instructions.append(new CCLObjectArray(index, klassIndex, s"${comp.typ.getName}"))
             index += 1
           }
           // InstanceKlass

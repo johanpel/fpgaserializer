@@ -35,7 +35,7 @@ void printHexEditorView(FILE * f, void * data, int bytes)
 */
   int i = 0;
   while (bytes > 0) {
-    fprintf(f, "%02X => X\"", i / 8);
+    fprintf(f, "%04d => X\"", i / 8);
     for (int j = 0; (j < 8) && (bytes > 0); j++) {
       fprintf(f, "%02X", d[i]);
       i++;
