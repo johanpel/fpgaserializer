@@ -6,6 +6,8 @@
 #include <omp.h>
 
 #include "fpgaserialize.h"
+//#include "employees.h"
+#include "pictures.h"
 
 void printBytes(FILE * f, void * data, int bytes)
 {
@@ -45,6 +47,73 @@ void printHexEditorView(FILE * f, void * data, int bytes)
   }
   fflush(f);
 }
+
+
+
+JNIEXPORT void JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_fpgaserialize_00024_testPictures(JNIEnv * env, jobject this, jobject obj) {
+  void* oop = resolveJNIHandle(obj);
+  SimpleImage_Array* imgs = get_SimpleImage_Array(oop);
+  printf("There are %d images\n", *imgs->size);
+  for (int i = 0; i < *imgs->size; i++) {
+    SimpleImage* img = get_SimpleImage(imgs->values[i]);
+    for (int y = 0; y < *img->h; y++) {
+      for (int x = 0; x < *img->w; x++) {
+        img->pixels->values[y*(*img->w)+x] *= 2;
+      }
+    }
+  }
+}
+
+
+JNIEXPORT void JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_fpgaserialize_00024_testPicturesJNI(JNIEnv * env, jobject this, jobject obj) {
+  jclass klass = (*env)->FindClass(env, "org/tudelft/ewi/ce/fpgaserialize/SimpleImage");
+
+  jfieldID wFID = (*env)->GetFieldID(env, klass, "w", "I");
+  jfieldID hFID = (*env)->GetFieldID(env, klass, "h", "I");
+  jfieldID pixelsFID = (*env)->GetFieldID(env, klass, "pixels", "[I");
+
+  jsize imageCnt = (*env)->GetArrayLength(env, obj);
+  for (int i = 0; i < imageCnt; i++) {
+    jobject img = (*env)->GetObjectArrayElement(env, obj, i);
+    int w = (*env)->GetIntField(env, img, wFID);
+    int h = (*env)->GetIntField(env, img, hFID);
+    jobject pixelsArray = (*env)->GetObjectField(env, img, pixelsFID);
+    jboolean isCopy;
+    int* pixels = (*env)->GetIntArrayElements(env, pixelsArray, &isCopy);
+    for (int y = 0; y < h; y++) {
+      for (int x = 0; x < w; x++) {
+        pixels[y*w+x] *= 2;
+      }
+    }
+    (*env)->ReleaseIntArrayElements(env, pixelsArray, pixels, 0);
+  }
+}
+
+/*JNIEXPORT void JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_fpgaserialize_00024_raiseSalary(JNIEnv * env, jobject this, jobject obj) {
+  void* oop = resolveJNIHandle(obj);
+  Employee_Array* emps = get_Employee_Array(oop);
+  printf("Number of employees: %d\n", *emps->size);
+
+  for (int i = 0; i < *emps->size; i++) {
+    Employee* emp = get_Employee(emps->values[i]);
+    *emp->salary += 1000;
+    *emp->age = 50;
+  }
+}
+
+
+JNIEXPORT void JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_fpgaserialize_00024_test(JNIEnv * env, jobject this, jobject obj) {
+  void* oop = resolveJNIHandle(obj);
+  Employee* emp = get_Employee(oop);
+
+  printf("Employee name: ");
+  for (int i=0;i<*emp->name->value->size;i++)
+    putchar(emp->name->value->values[i]);
+  putchar('\n');
+
+  printf("Employee age : %d\n", *emp->age);
+}
+*/
 
 JNIEXPORT void JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_SerializerSimulator_00024_printObjectMemory(JNIEnv * env, jobject this, jobject handle)
 {

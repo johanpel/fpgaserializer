@@ -20,7 +20,7 @@ package jor is
 
   constant JOR_OBJ_SIZE_BITS          : integer := JOR_LC_ADDR_BITS;
 
-  constant JOR_STACK_SIZE             : integer :=    32;
+  constant JOR_STACK_SIZE             : integer :=    16;
 
   constant JOR_ARRAY_HEADER_SIZE      : integer :=    24;
   constant JOR_ARRAY_SIZE_WORD_OFFSET : integer :=     2;
