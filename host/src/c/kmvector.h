@@ -1,0 +1,53 @@
+#ifndef SRC_KMVECTOR_H
+#define SRC_KMVECTOR_H
+
+typedef char byte;
+
+typedef struct _float_Array float_Array;
+typedef struct _KMVector KMVector;
+typedef struct _KMVector_Array KMVector_Array;
+inline float_Array get_float_Array(void* obj);
+inline KMVector get_KMVector(void* obj);
+inline KMVector_Array get_KMVector_Array(void* obj);
+// TYPE DEFINITIONS: 
+
+struct _float_Array {
+  int                      size;
+  float*                   values;
+};
+
+struct _KMVector {
+  int                      size;
+  float_Array              values;
+};
+
+struct _KMVector_Array {
+  int                      size;
+  KMVector**               values;
+};
+
+// STRUCTURE FILLING FUNCTIONS: 
+
+inline float_Array get_float_Array(void* obj) {
+  float_Array ret;
+  ret.size                 = *(int*)((char*)obj + 16);
+  ret.values               = (float*)((char*)obj + 24);
+  return ret;
+}
+
+inline KMVector get_KMVector(void* obj) {
+  KMVector ret;
+  ret.size                 = *(int*)((char*)obj + 16);
+  ret.values               = get_float_Array((void*)*(long*)((char*)obj + 24));
+  return ret;
+}
+
+inline KMVector_Array get_KMVector_Array(void* obj) {
+  KMVector_Array ret;
+  ret.size                 = *(int*)((char*)obj + 16);
+  ret.values               = (KMVector**)((char*)obj + 24);
+  return ret;
+}
+
+
+#endif //SRC_RECKLESS_H

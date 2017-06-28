@@ -1,0 +1,239 @@
+JNIEXPORT void JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_fpgaserialize_00024_testPictures(
+    JNIEnv * env,
+    jobject this,
+    jobject in,
+    jobject out)
+{
+  int coeffs[25] = {
+      2,   1,   0,   -1,  -2,
+      3,   2,   0,   -2,  -3,
+      4,   3,   0,   -3,  -4,
+      3,   2,   0,   -2,  -3,
+      2,   1,   0,   -1,  -2
+  };
+  int scale = 50;
+
+  void* in_oop = NULL;
+  void* out_oop = NULL;
+  SimpleImage_Array* in_imgs = NULL;
+  SimpleImage_Array* out_imgs = NULL;
+
+  start_time();
+  stop_time("calib");
+
+  start_time();
+  for (int r=0;r<repeats;r++) {
+    in_oop = resolveJNIHandle(in);
+    out_oop = resolveJNIHandle(out);
+
+    in_imgs = get_SimpleImage_Array(in_oop);
+    out_imgs = get_SimpleImage_Array(out_oop);
+  }
+  stop_time("RECKLESS Init");
+
+  uint64_t img_init_total = 0;
+  uint64_t img_conv_total = 0;
+
+  //#pragma omp parallel for num_threads(1)
+  for (int i = 0; i < *in_imgs->size; i++) {
+    int w=0,h=0;
+    SimpleImage* in_img = NULL;
+    SimpleImage* out_img = NULL;
+    start_time();
+    for (int r=0;r<repeats;r++) {
+      in_img = get_SimpleImage(in_imgs->values[i]);
+      out_img = get_SimpleImage(out_imgs->values[i]);
+      w = *in_img->w;
+      h = *in_img->h;
+    }
+    img_init_total += diff_time();
+    start_time();
+    convolute(in_img->pixels->values, out_img->pixels->values, coeffs, scale, 5, w, h);
+    img_conv_total += diff_time();
+  }
+  printf("%llu, %llu, ", (long long unsigned int)img_init_total, (long long unsigned int)img_conv_total);
+  fflush(stdout);
+}
+
+
+JNIEXPORT void JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_fpgaserialize_00024_testPicturesJNI(
+    JNIEnv * env,
+    jobject this,
+    jobject in,
+    jobject out)
+{
+
+  int coeffs[25] = {
+      2,   1,   0,   -1,  -2,
+      3,   2,   0,   -2,  -3,
+      4,   3,   0,   -3,  -4,
+      3,   2,   0,   -2,  -3,
+      2,   1,   0,   -1,  -2
+  };
+  int scale = 50;
+
+  jclass klass = NULL;
+  jfieldID wFID = NULL;
+  jfieldID hFID = NULL;
+  jfieldID pixelsFID = NULL;
+  jsize imageCnt = NULL;
+
+  (*env)->FindClass(env, "org/tudelft/ewi/ce/fpgaserialize/SimpleImage");
+
+  start_time();
+  stop_time("calib");
+
+  start_time();
+
+
+  for (int r=0;r<repeats;r++) {
+    klass = (*env)->FindClass(env, "org/tudelft/ewi/ce/fpgaserialize/SimpleImage");
+
+    wFID = (*env)->GetFieldID(env, klass, "w", "I");
+    hFID = (*env)->GetFieldID(env, klass, "h", "I");
+    pixelsFID = (*env)->GetFieldID(env, klass, "pixels", "[I");
+
+
+    //jobject inglob = (*env)->NewGlobalRef(env, in);
+    //jobject outglob = (*env)->NewGlobalRef(env, out);
+    //jobject inglob = in;
+    //jobject outglob = out;
+
+    imageCnt = (*env)->GetArrayLength(env, in);
+
+    //#pragma omp parallel num_threads(1)
+    //{
+    //int tid = omp_get_thread_num();
+    //if (tid != 0)
+  //      (*global_vm)->AttachCurrentThread(global_vm, (void**)&thread_jni, NULL);
+    //#pragma omp for
+  }
+  stop_time("JNI Init");
+
+  uint64_t img_init_total = 0;
+  uint64_t img_conv_total = 0;
+
+  for (int i = 0; i < imageCnt; i++) {
+    jobject in_img = NULL;
+    jobject out_img = NULL;
+    jobject in_pix = NULL;
+    jobject out_pix = NULL;
+    int* in_pixels = NULL;
+    int* out_pixels = NULL;
+    int w=0, h=0;
+
+    start_time();
+    for (int r=0;r<repeats;r++) {
+      in_img = (*env)->GetObjectArrayElement(env, in, i);
+      out_img = (*env)->GetObjectArrayElement(env, out, i);
+      w = (*env)->GetIntField(env, in_img, wFID) - 1;
+      h = (*env)->GetIntField(env, in_img, hFID) - 1;
+      in_pix = (*env)->GetObjectField(env, in_img, pixelsFID);
+      out_pix = (*env)->GetObjectField(env, out_img, pixelsFID);
+      in_pixels = (*env)->GetPrimitiveArrayCritical(env, in_pix, NULL); //&isCopy);
+      out_pixels = (*env)->GetPrimitiveArrayCritical(env, out_pix, NULL); //&isCopy);
+    }
+    img_init_total += diff_time();
+
+    start_time();
+    convolute(in_pixels, out_pixels, coeffs, scale, 5, w, h);
+    img_conv_total += diff_time();
+
+    start_time();
+    for (int r=0;r<repeats;r++) {
+      (*env)->ReleasePrimitiveArrayCritical(env, in_pix, in_pixels, JNI_ABORT);
+      (*env)->ReleasePrimitiveArrayCritical(env, out_pix, out_pixels, JNI_ABORT);
+    }
+    img_init_total += diff_time();
+
+    //(*thread_jni)->ReleaseIntArrayElements(thread_jni, in_pix, in_pixels, 0);
+    //(*thread_jni)->ReleaseIntArrayElements(thread_jni, out_pix, out_pixels, 0);
+
+  //}
+  //if (tid != 0)
+//      (*global_vm)->DetachCurrentThread(global_vm);
+  }
+  printf("%llu, %llu, ", (long long unsigned int)img_init_total, (long long unsigned int)img_conv_total);
+  fflush(stdout);
+}
+
+/*JNIEXPORT void JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_fpgaserialize_00024_raiseSalary(JNIEnv * env, jobject this, jobject obj) {
+  void* oop = resolveJNIHandle(obj);
+  Employee_Array* emps = get_Employee_Array(oop);
+  printf("Number of employees: %d\n", *emps->size);
+
+  for (int i = 0; i < *emps->size; i++) {
+    Employee* emp = get_Employee(emps->values[i]);
+    *emp->salary += 1000;
+    *emp->age = 50;
+  }
+}
+
+
+JNIEXPORT void JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_fpgaserialize_00024_test(JNIEnv * env, jobject this, jobject obj) {
+  void* oop = resolveJNIHandle(obj);
+  Employee* emp = get_Employee(oop);
+
+  printf("Employee name: ");
+  for (int i=0;i<*emp->name->value->size;i++)
+    putchar(emp->name->value->values[i]);
+  putchar('\n');
+
+  printf("Employee age : %d\n", *emp->age);
+}
+*/
+
+JNIEXPORT void JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_SerializerSimulator_00024_printObjectMemory(JNIEnv * env, jobject this, jobject handle)
+{
+  //fprintf(stderr, "JNI Handle: %016lX - Data: %016lX\n", (long)handle, *(long*)handle);
+
+  // JNI functions use JNI handles which are not OOPs. It must first be resolved.
+  char* oop = resolveJNIHandle(handle);
+  char* klass = getInstanceKlass(oop);
+  int array = isArray(klass);
+  int header_size = 16 + 4 * array;
+  int size = getInstanceSizeOrElementSize(klass);
+  //char * super = getSuperKlass(klass);
+  int elementsize = size;
+  int array_elements = 0;
+  int header_gap = 0;
+  if (array) {
+    array_elements = getArrayElements(oop);
+    header_gap = elementsize - (header_size % elementsize);
+    header_size = header_size + header_gap;
+    size = size * array_elements + header_size;
+  }
+
+  /*while ((super != NULL) && (array == 0)) {
+    int super_size = getInstanceSizeOrElementSize(super);
+    fprintf(stderr, "Super size: %d\n", super_size);
+    array = isArray(super);
+    super = getSuperKlass(super);
+  }
+  */
+
+  fprintf(stdout, "OOP: %016lX\n", (long)oop);
+  //fprintf(stderr, "Klass: %016lX\n", (long)klass);
+  //fprintf(stderr, "Super: %016lX\n", (long)super);
+  //fprintf(stderr, "Array: %d\n", array);
+  //fprintf(stderr, "Header size: %d\n", header_size);
+  //fprintf(stderr, "Size: %d\n", size);
+  //if (array) {
+//    fprintf(stderr, "Element size: %d\n", elementsize);
+    //fprintf(stderr, "Array Elements: %d\n", array_elements);
+    //fprintf(stderr, "Header alignment gap: %d\n", header_gap);
+  //}
+
+  printHexEditorView(stdout, oop, size);
+
+  /*fprintf(stderr, "InstanceKlass pointer: %016lX\n", *(long*)&oop[8]);
+  fprintf(stderr, "InstanceKlass contents:\n");
+  printHexEditorView(stderr, klass, 128);
+  fprintf(stderr, "Instance size: %08X\n", size);
+
+  fprintf(stderr, "\n");*/
+
+  fflush(stderr);
+
+  return;
+}

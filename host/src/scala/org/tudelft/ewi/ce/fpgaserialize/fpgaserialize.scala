@@ -15,35 +15,39 @@ import scala.util.Random
 class SomeClass(val a: Int, val b: Int, val c: Array[Int])
 
 class Person(val name: String,
-             var age : Int)
+             var age: Int)
 
-class Employee(var accountNumber : Int,
+class Employee(var accountNumber: Int,
                var salary: Int,
-               var department : String,
-               var hoursPerDay : Array[Int],
-               name : String,
-               age : Int)
-  extends Person(name,age)
+               var department: String,
+               var hoursPerDay: Array[Int],
+               name: String,
+               age: Int)
+  extends Person(name, age)
 
-class SimpleImage(var pixels : Array[Int], var w: Int, var h: Int)
+class SimpleImage(var pixels: Array[Int], var w: Int, var h: Int)
+
+class KMVector(val size : Int, val values : Array[Float])
 
 object fpgaserialize {
 
   System.loadLibrary("fpgaserializer")
 
-  @native def test(obj: Any) : Unit
-  @native def raiseSalary(obj : Any) : Unit
-  @native def testPictures(obj : Any) : Unit
-  @native def testPicturesJNI(obj : Any) : Unit
+  @native def test(obj: Any): Unit
+  @native def raiseSalary(obj: Any): Unit
+  @native def testPictures(in: Array[SimpleImage], out: Array[SimpleImage]): Unit
+  @native def testPicturesJNI(in: Array[SimpleImage], out: Array[SimpleImage]): Unit
+  @native def testKMeans(in: Array[KMVector], dims : Int, centers : Int, out: Array[Int]): Unit
+  @native def testKMeansJNI(in: Array[KMVector], dims : Int, centers : Int, out: Array[Int]): Unit
 
-  var hi : Person = new Person("hi",10)
+  var hi: Person = new Person("hi", 10)
 
   val curLayouter = new CurrentLayouter()
 
-  var t0 = System.nanoTime()
-  var t1 = System.nanoTime()
+  var t0: Long = System.nanoTime()
+  var t1: Long = System.nanoTime()
 
-  def getPixels(ImageName: String) : SimpleImage = {
+  def getPixels(ImageName: String): SimpleImage = {
     val imgPath = new File(ImageName)
     val bufferedImage = ImageIO.read(imgPath)
 
@@ -63,15 +67,15 @@ object fpgaserialize {
     //data.getData
   }
 
-  def writePixels(ImageName: String, img : SimpleImage) = {
-    val bufferedImage = new BufferedImage(img.w,img.h, BufferedImage.TYPE_INT_ARGB)
-    bufferedImage.setRGB(0,0,img.w,img.h,img.pixels,0,img.w)
+  def writePixels(ImageName: String, img: SimpleImage): Unit = {
+    val bufferedImage = new BufferedImage(img.w, img.h, BufferedImage.TYPE_INT_ARGB)
+    bufferedImage.setRGB(0, 0, img.w, img.h, img.pixels, 0, img.w)
     val fos = new FileOutputStream(ImageName.replace("jpg", "png"))
     ImageIO.write(bufferedImage, "png", fos)
     fos.close()
   }
 
-  def clas_atyp_aobj() : Unit = {
+  def clas_atyp_aobj(): Unit = {
     val a0 = Array[Int](0x33333333, 0x33333333)
     val a1 = Array[Int](0x66666666)
     val a2 = Array[Int](0x99999999, 0x99999999, 0x99999999)
@@ -106,10 +110,10 @@ object fpgaserialize {
     println(ClassLayout.parseClass(a3.getClass, curLayouter).toPrintable)
   }
 
-  def testString() : Unit = {
+  def testString(): Unit = {
 
-    val n = Math.pow(2,6).toInt
-    val s = Math.pow(2,20).toInt
+    val n = Math.pow(2, 6).toInt
+    val s = Math.pow(2, 20).toInt
     val alloc = n * s * 4
     Random.setSeed(0)
     val a = Array.fill[String](n)(Random.nextString(s))
@@ -128,13 +132,13 @@ object fpgaserialize {
     println((t1 - t0).toDouble * 1E-9)
 
     val kryo = new Kryo()
-    kryo.register(classOf[Array[String]],0)
-    kryo.register(classOf[String],1)
+    kryo.register(classOf[Array[String]], 0)
+    kryo.register(classOf[String], 1)
 
     val u = UnsafeInstance.get
     val baosb = new FileOutputStream("testb.ser")
     val addr = u.allocateMemory(alloc)
-    val output = new UnsafeMemoryOutput(addr,alloc)
+    val output = new UnsafeMemoryOutput(addr, alloc)
     t0 = System.nanoTime()
     kryo.writeObject(output, b)
     t1 = System.nanoTime()
@@ -144,16 +148,16 @@ object fpgaserialize {
     println((t1 - t0).toDouble * 1E-9)
   }
 
-  def testEmployees() : Unit = {
+  def testEmployees(): Unit = {
     RecklessGenerator(classOf[Array[Employee]], "employees")
 
-    val empCount = Math.pow(2,16).toInt
+    val empCount = Math.pow(2, 16).toInt
 
     Random.setSeed(0)
     val emps = Array.fill(empCount)(new Employee(Random.nextInt,
       Random.nextInt,
       Random.nextString(16),
-      Array(Random.nextInt,Random.nextInt,Random.nextInt,Random.nextInt,Random.nextInt,Random.nextInt,Random.nextInt),
+      Array(Random.nextInt, Random.nextInt, Random.nextInt, Random.nextInt, Random.nextInt, Random.nextInt, Random.nextInt),
       Random.nextString(16),
       Random.nextInt)
     )
@@ -162,13 +166,13 @@ object fpgaserialize {
     val emps2 = Array.fill(empCount)(new Employee(Random.nextInt,
       Random.nextInt,
       Random.nextString(16),
-      Array(Random.nextInt,Random.nextInt,Random.nextInt,Random.nextInt,Random.nextInt,Random.nextInt,Random.nextInt),
+      Array(Random.nextInt, Random.nextInt, Random.nextInt, Random.nextInt, Random.nextInt, Random.nextInt, Random.nextInt),
       Random.nextString(16),
       Random.nextInt)
     )
 
     t0 = System.nanoTime()
-    for (i <- Range(0,64)) {
+    for (i <- Range(0, 64)) {
       raiseSalaryJVM(emps)
     }
     t1 = System.nanoTime()
@@ -176,56 +180,113 @@ object fpgaserialize {
 
 
     t0 = System.nanoTime()
-    for (i <- Range(0,64)) {
+    for (i <- Range(0, 64)) {
       raiseSalary(emps2)
     }
     t1 = System.nanoTime()
     println((t1 - t0).toDouble * 1E-9)
   }
 
-  def raiseSalaryJVM(emps : Array[Employee]) : Unit = {
+  def testPictures(): Unit = {
+    val maxSize = Math.pow(2, 24).toInt
+
+    //for (i <- Range(0,20)) {
+
+    //val numObjects = Math.pow(2, i).toInt
+    //val reps = 1
+    //val w = Math.sqrt(maxSize / numObjects).toInt
+    //val h = Math.sqrt(maxSize / numObjects).toInt
+
+    //print(s"$numObjects, $w, $h, ")
+
+    RecklessGenerator(classOf[Array[SimpleImage]], "pictures")
+
+    val dataFolder = new File("data/lfw")
+    val files = dataFolder.listFiles().filter(f => f.isFile)
+    val alpha = 80
+    val beta = 98
+    val batch = files.filter(f => f.getName.charAt(0).asInstanceOf[Int] < alpha && f.getName.charAt(1).asInstanceOf[Int] < beta)
+
+    //t0 = System.nanoTime()
+    //destReckless.indices.foreach(i => writePixels("data/reckless/" + files(i).getName,imagesReckless(i)))
+    //t1 = System.nanoTime()
+    //println((t1 - t0).toDouble * 1E-9)
+
+    var imagesJNI = batch.map(f => getPixels(f.getPath))
+    var destJNI = batch.map(f => getPixels(f.getPath))
+    //var imagesJNI = Array.fill(numObjects)(new SimpleImage(new Array[Int](w * h), w, h))
+    //var destJNI = Array.fill(numObjects)(new SimpleImage(new Array[Int](w * h), w, h))
+
+    //        for (i <- Range(0, reps)) {
+    //          System.out.flush()
+    testPicturesJNI(imagesJNI, destJNI)
+    //print("\n")
+    //        }
+    //print(f"${(t1 - t0).toDouble * 1E-9}%16.8f \n")
+    //print("\n")
+
+    //t0 = System.nanoTime()
+    destJNI.indices.foreach(i => writePixels("data/jni/" + batch(i).getName, destJNI(i)))
+    //t1 = System.nanoTime()
+    //println((t1 - t0).toDouble * 1E-9)
+
+    var imagesReckless = batch.map(f => getPixels(f.getPath))
+    var destReckless = batch.map(f => getPixels(f.getPath))
+    //var imagesReckless = Array.fill(numObjects)(new SimpleImage(new Array[Int](w * h), w, h))
+    //var destReckless = Array.fill(numObjects)(new SimpleImage(new Array[Int](w * h), w, h))
+    //t1 = System.nanoTime()
+    //println((t1 - t0).toDouble * 1E-9)
+
+    //        for (i <- Range(0, reps)) {
+    //          System.out.flush()
+    testPictures(imagesReckless, destReckless)
+    //        }
+    destReckless.indices.foreach(i => writePixels("data/reckless/" + batch(i).getName, destReckless(i)))
+    //print(f"${(t1 - t0).toDouble * 1E-9}%16.8f ")
+
+    /*
+    var same = true
+    for (i <- destJNI.indices) {
+      for (j <- destJNI(i).pixels.indices) {
+        same = destJNI(i).pixels(j) == destReckless(i).pixels(j)
+      }
+    }
+    print(same)
+    */
+
+    imagesJNI = null
+    destJNI = null
+    imagesReckless = null
+    destReckless = null
+    System.gc()
+    print("\n")
+  }
+
+  def raiseSalaryJVM(emps: Array[Employee]): Unit = {
     emps.foreach(e => e.salary += 1000)
     emps(0).age = 50
   }
 
   def main(args: Array[String]): Unit = {
-
     //testEmployees()
+    //testFigures()
 
-    t0 = System.nanoTime()
-    RecklessGenerator(classOf[Array[SimpleImage]], "pictures")
-    t1 = System.nanoTime()
-    println((t1 - t0).toDouble * 1E-9)
+    for (r <- Range(0,32)) {
+      val objects = Math.pow(2, 16).toInt
+      val dims = 2
+      val centers = 2
 
-    t0 = System.nanoTime()
-    val dataFolder = new File("data/lfw")
-    val files = dataFolder.listFiles().filter(f => f.isFile) // && f.getName.charAt(0) == 'A')
-    val imagesReckless = files.map(f => getPixels(f.getPath))
-    val imagesJNI = files.map(f => getPixels(f.getPath))
-    t1 = System.nanoTime()
-    println((t1 - t0).toDouble * 1E-9)
+      RecklessGenerator(classOf[Array[KMVector]], "kmvector")
 
-    t0 = System.nanoTime()
-    testPictures(imagesReckless)
-    t1 = System.nanoTime()
-    println("Reckless:" + ((t1 - t0).toDouble * 1E-9).toString)
+      val vecsReckless = Array.fill[KMVector](objects)(new KMVector(dims, Array.fill[Float](dims)(Random.nextFloat)))
+      val vecsJNI = Array.fill[KMVector](objects)(new KMVector(dims, Array.fill[Float](dims)(Random.nextFloat)))
 
-    t0 = System.nanoTime()
-    imagesReckless.indices.foreach(i => writePixels("data/reckless/" + files(i).getName,imagesReckless(i)))
-    t1 = System.nanoTime()
-    println((t1 - t0).toDouble * 1E-9)
-
-    t0 = System.nanoTime()
-    testPicturesJNI(imagesJNI)
-    t1 = System.nanoTime()
-    println("JNI:" + ((t1 - t0).toDouble * 1E-9).toString)
-
-    t0 = System.nanoTime()
-    imagesJNI.indices.foreach(i => writePixels("data/jni/" + files(i).getName,imagesJNI(i)))
-    t1 = System.nanoTime()
-    println((t1 - t0).toDouble * 1E-9)
-
+      testKMeans(vecsReckless, dims, centers, null)
+      testKMeansJNI(vecsJNI, dims, centers, null)
+      print("\n")
+    }
   }
+
 }
 
 //println(ClassLayout.parseClass(classOf[Person], curLayouter).toPrintable)
