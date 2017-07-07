@@ -206,6 +206,7 @@ void compute_delta(int *deviceIntermediates,
 //  ----------------------------------------
 //
 /* return an array of cluster centers of size [numClusters][numCoords]       */
+extern "C" {
 float** cuda_kmeans(float **objects,      /* in: [numObjs][numCoords] */
                    int     numCoords,    /* no. features */
                    int     numObjs,      /* no. objects */
@@ -371,4 +372,5 @@ float** cuda_kmeans(float **objects,      /* in: [numObjs][numCoords] */
     free(newClusterSize);
 
     return clusters;
+}
 }

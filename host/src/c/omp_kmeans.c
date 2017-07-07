@@ -84,7 +84,7 @@ float** omp_kmeans(int     is_perform_atomic, /* in: */
     float    delta;          /* % of objects change their clusters */
     float  **clusters;       /* out: [numClusters][numCoords] */
     float  **newClusters;    /* [numClusters][numCoords] */
-    double   timing;
+    double   timing = 0.0;
 
     int      nthreads;             /* no. threads */
     int    **local_newClusterSize; /* [nthreads][numClusters] */

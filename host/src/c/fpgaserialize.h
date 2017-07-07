@@ -4,10 +4,6 @@
 #ifndef SRC_FPGASERIALIZE_H_
 #define SRC_FPGASERIALIZE_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 void printBytes(FILE * f, void * data, int bytes);
 void printHexEditorView(FILE * f, void * data, int bytes);
 
@@ -49,10 +45,22 @@ static inline int getArrayElements(char * oop) {
   return *(int*)&oop[16];
 }
 
-JNIEXPORT void JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_SerializerSimulator_00024_printObjectMemory(JNIEnv *, jobject, jobject);
+JNIEXPORT void JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_fpgaserialize_00024_testKMeans(
+    JNIEnv * env,
+    jobject me,
+    jobjectArray in,
+    jint dims,
+    jint centers,
+    jint mode,
+    jarray out);
 
-#ifdef __cplusplus
-}
-#endif
+JNIEXPORT void JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_fpgaserialize_00024_testKMeansJNI(
+    JNIEnv * env,
+    jobject me,
+    jobjectArray in,
+    jint dims,
+    jint centers,
+    jint mode,
+    jarray out);
 
 #endif /* SRC_FPGASERIALIZE_H_ */

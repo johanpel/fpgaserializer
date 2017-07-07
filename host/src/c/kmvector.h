@@ -9,7 +9,7 @@ typedef struct _KMVector_Array KMVector_Array;
 inline float_Array get_float_Array(void* obj);
 inline KMVector get_KMVector(void* obj);
 inline KMVector_Array get_KMVector_Array(void* obj);
-// TYPE DEFINITIONS: 
+// STRUCTS: 
 
 struct _float_Array {
   int                      size;
@@ -26,7 +26,7 @@ struct _KMVector_Array {
   KMVector**               values;
 };
 
-// STRUCTURE FILLING FUNCTIONS: 
+// INLINE FUNCTIONS: 
 
 inline float_Array get_float_Array(void* obj) {
   float_Array ret;

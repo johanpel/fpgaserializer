@@ -13,23 +13,35 @@ object RecklessGenerator {
   var sp: Int = 16
 
   def apply(klass: Class[_], libName: String): Unit = {
+    println("Obtaining class information.")
     val rStructs = RecklessGenerator.getClassStructs(klass)
+
+    println("Generating forward function declarations for C header.")
     val sourceDecl = RecklessGenerator.generateSource(rStructs, source = true, forward = true)
+
+    println("Generating C type definitions for C header.")
     val types = RecklessGenerator.generateStructs(rStructs, forward = true)
+
+    println("Generating structs for C header.")
     val structs = RecklessGenerator.generateStructs(rStructs)
+
+    println("Generating inline function implementations for C header.")
     val source = RecklessGenerator.generateSource(rStructs)
+
+    println("Generating extern function declarations for C source.")
     val declarations = RecklessGenerator.generateSource(rStructs, source = true)
 
+    println("Writing to file.")
     val headerFOS = new FileOutputStream("src/c/" + libName + ".h")
     val cFOS = new FileOutputStream("src/c/" + libName + ".c")
 
     headerFOS.write(RecklessGenerator.headerHeader(libName).getBytes)
     headerFOS.write(types.getBytes)
     headerFOS.write(sourceDecl.getBytes)
-    headerFOS.write("// TYPE DEFINITIONS: \n\n".getBytes)
+    headerFOS.write("// STRUCTS: \n\n".getBytes)
     headerFOS.write(structs.getBytes)
 
-    headerFOS.write("// STRUCTURE FILLING FUNCTIONS: \n\n".getBytes)
+    headerFOS.write("// INLINE FUNCTIONS: \n\n".getBytes)
     headerFOS.write(source.getBytes)
     headerFOS.write(RecklessGenerator.headerFooter.getBytes)
 
@@ -38,6 +50,7 @@ object RecklessGenerator {
 
     headerFOS.close()
     cFOS.close()
+    println("Code generation completed.")
   }
 
 
@@ -76,6 +89,8 @@ object RecklessGenerator {
   }
 
   def getClassStructs(klass: Class[_]): Array[RecklessStruct] = {
+    klass.getTypeParameters.foreach(t => println("Type parameter: " + t.getName))
+    klass.getAnnotations.foreach(a => println("Annotation, type=" + a.annotationType().getName))
     val klasses = ReflectionHelper.getAllClasses(klass)
     val structs = klasses.map(klass => new RecklessStruct(klass, CompactLayouter.getFields(klass), klass.isArray))
     structs

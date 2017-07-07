@@ -11,6 +11,9 @@ import org.openjdk.jol.info.ClassLayout
 import org.openjdk.jol.layouters.CurrentLayouter
 
 import scala.util.Random
+import org.broadinstitute.gatk.utils.genotyper.ReadLikelihoods
+import org.broadinstitute.gatk.utils.haplotype.Haplotype
+import org.broadinstitute.gatk.utils.sam.GATKSAMRecord
 
 class SomeClass(val a: Int, val b: Int, val c: Array[Int])
 
@@ -33,12 +36,12 @@ object fpgaserialize {
 
   System.loadLibrary("fpgaserializer")
 
-  @native def test(obj: Any): Unit
+  //@native def test(obj: Any): Unit
   @native def raiseSalary(obj: Any): Unit
   @native def testPictures(in: Array[SimpleImage], out: Array[SimpleImage]): Unit
   @native def testPicturesJNI(in: Array[SimpleImage], out: Array[SimpleImage]): Unit
-  @native def testKMeans(in: Array[KMVector], dims : Int, centers : Int, out: Array[Int]): Unit
-  @native def testKMeansJNI(in: Array[KMVector], dims : Int, centers : Int, out: Array[Int]): Unit
+  @native def testKMeans(in: Array[KMVector], dims : Int, centers : Int, mode : Int, out: Array[Int]): Unit
+  @native def testKMeansJNI(in: Array[KMVector], dims : Int, centers : Int, mode : Int, out: Array[Int]): Unit
 
   var hi: Person = new Person("hi", 10)
 
@@ -262,6 +265,27 @@ object fpgaserialize {
     print("\n")
   }
 
+  def testVectors(): Unit = {
+    RecklessGenerator(classOf[Array[KMVector]], "kmvector")
+
+    for (r <- Range(0,32)) {
+      val objects = Math.pow(2, 4).toInt
+      val dims = 2
+      val centers = 4
+
+      val vecsReckless = Array.fill[KMVector](objects)(new KMVector(dims, Array.fill[Float](dims)(Random.nextFloat)))
+      val vecsJNI = Array.fill[KMVector](objects)(new KMVector(dims, Array.fill[Float](dims)(Random.nextFloat)))
+
+      testKMeans(vecsReckless, dims, centers, 1, null)
+      testKMeans(vecsReckless, dims, centers, 2, null)
+      //testKMeans(vecsReckless, dims, centers, 3, null)
+      testKMeansJNI(vecsJNI, dims, centers, 1, null)
+      testKMeansJNI(vecsJNI, dims, centers, 2, null)
+      //testKMeansJNI(vecsJNI, dims, centers, 3, null)
+      print("\n")
+    }
+  }
+
   def raiseSalaryJVM(emps: Array[Employee]): Unit = {
     emps.foreach(e => e.salary += 1000)
     emps(0).age = 50
@@ -270,21 +294,9 @@ object fpgaserialize {
   def main(args: Array[String]): Unit = {
     //testEmployees()
     //testFigures()
+    testVectors()
+    //RecklessGenerator(classOf[GATKSAMRecord], "pairhmm")
 
-    for (r <- Range(0,32)) {
-      val objects = Math.pow(2, 16).toInt
-      val dims = 2
-      val centers = 2
-
-      RecklessGenerator(classOf[Array[KMVector]], "kmvector")
-
-      val vecsReckless = Array.fill[KMVector](objects)(new KMVector(dims, Array.fill[Float](dims)(Random.nextFloat)))
-      val vecsJNI = Array.fill[KMVector](objects)(new KMVector(dims, Array.fill[Float](dims)(Random.nextFloat)))
-
-      testKMeans(vecsReckless, dims, centers, null)
-      testKMeansJNI(vecsJNI, dims, centers, null)
-      print("\n")
-    }
   }
 
 }
