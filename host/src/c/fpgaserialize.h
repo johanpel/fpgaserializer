@@ -45,7 +45,7 @@ static inline int getArrayElements(char * oop) {
   return *(int*)&oop[16];
 }
 
-JNIEXPORT void JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_fpgaserialize_00024_testKMeansJNI(
+JNIEXPORT jlong JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_fpgaserialize_00024_testKMeansJNI(
     JNIEnv * env,
     jobject me,
     jobjectArray in,
@@ -54,7 +54,7 @@ JNIEXPORT void JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_fpgaserialize_00024
     jint mode,
     jarray out);
 
-JNIEXPORT void JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_fpgaserialize_00024_testKMeansUnsafe(
+JNIEXPORT jlong JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_fpgaserialize_00024_testKMeansUnsafe(
     JNIEnv * env,
     jobject me,
     jlong in,
@@ -64,7 +64,7 @@ JNIEXPORT void JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_fpgaserialize_00024
     jint mode,
     jarray out);
 
-JNIEXPORT void JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_fpgaserialize_00024_testKMeansRecklessSerialized(
+JNIEXPORT jlong JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_fpgaserialize_00024_testKMeansRecklessSerialized(
     JNIEnv * env,
     jobject me,
     jobjectArray in,
@@ -73,7 +73,7 @@ JNIEXPORT void JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_fpgaserialize_00024
     jint mode,
     jarray out);
 
-JNIEXPORT void JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_fpgaserialize_00024_testKMeansReckless(
+JNIEXPORT jlong JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_fpgaserialize_00024_testKMeansReckless(
     JNIEnv * env,
     jobject me,
     jobjectArray in,

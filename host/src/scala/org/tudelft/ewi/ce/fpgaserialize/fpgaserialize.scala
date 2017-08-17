@@ -36,15 +36,16 @@ object fpgaserialize {
 
   System.loadLibrary("fpgaserializer")
 
-  //@native def test(obj: Any): Unit
+  @native def test(obj: Any): Unit
   @native def raiseSalary(obj: Any): Unit
   @native def testPictures(in: Array[SimpleImage], out: Array[SimpleImage]): Unit
   @native def testPicturesJNI(in: Array[SimpleImage], out: Array[SimpleImage]): Unit
-  @native def testKMeansRecklessSerialized(in: Array[KMVector], dims : Int, centers : Int, mode : Int, out: Array[Int]): Unit
-  @native def testKMeansReckless(in: Array[KMVector], dims : Int, centers : Int, mode : Int, out: Array[Int]): Unit
-  @native def testKMeansJNISerialized(in: Array[KMVector], dims : Int, centers : Int, mode : Int, out: Array[Int]): Unit
-  @native def testKMeansJNI(in: Array[KMVector], dims : Int, centers : Int, mode : Int, out: Array[Int]): Unit
-  @native def testKMeansUnsafe(in: Long, objCnt: Int, dims : Int, centers : Int, mode : Int, out: Array[Int]): Unit
+
+  @native def testKMeansRecklessSerialized(in: Array[KMVector], dims : Int, centers : Int, mode : Int, out: Array[Int]): Long
+  @native def testKMeansReckless(in: Array[KMVector], dims : Int, centers : Int, mode : Int, out: Array[Int]): Long
+  @native def testKMeansJNISerialized(in: Array[KMVector], dims : Int, centers : Int, mode : Int, out: Array[Int]): Long
+  @native def testKMeansJNI(in: Array[KMVector], dims : Int, centers : Int, mode : Int, out: Array[Int]): Long
+  @native def testKMeansUnsafe(in: Long, objCnt: Int, dims : Int, centers : Int, mode : Int, out: Array[Int]): Long
 
   var hi: Person = new Person("hi", 10)
 
@@ -271,35 +272,39 @@ object fpgaserialize {
   def testVectors(): Unit = {
     RecklessGenerator(classOf[Array[KMVector]], "kmvector")
 
-    val repeats = 64
+    val repeats = 16
 
-    for (e <- Range(3,16)) {
+    for (e <- Range(3,18)) {
       System.gc()
       val objects = Math.pow(2, e).toInt
-      val dims = 32
+      val dims = 16
       val centers = 8
 
       print(f"$objects%6d, $dims%4d, $centers%2d, ")
 
-      var t = System.nanoTime()
+      var to = System.nanoTime()
+
+      var ti = 0L
 
       val MODE = 1
 
       /* JNI SERIALIZED */
       Random.setSeed(0)
       val vecsJNISerialized = Array.fill[KMVector](objects)(new KMVector(dims, Array.fill[Float](dims)(Random.nextFloat)))
-      t = System.nanoTime()
+      ti = 0
+      to = System.nanoTime()
 
       for (r <- Range(0, repeats))
-        testKMeansJNISerialized(vecsJNISerialized, dims, centers, MODE, null)
+        ti = ti + testKMeansJNISerialized(vecsJNISerialized, dims, centers, MODE, null)
 
-      t = System.nanoTime() - t
-      print(f"$t%10d,")
+      to = System.nanoTime() - to
+      print(f"$to%10d, $ti%10d, ")
 
       /* UNSAFE SERIALIZED*/
       Random.setSeed(0)
       val vecsUnsafe = Array.fill[KMVector](objects)(new KMVector(dims, Array.fill[Float](dims)(Random.nextFloat)))
-      t = System.nanoTime()
+      ti = 0
+      to = System.nanoTime()
 
       for (r <- Range(0, repeats)) {
         val u = UnsafeInstance.get
@@ -310,45 +315,48 @@ object fpgaserialize {
               u.putFloat(ua + (v * dims + i) * 4, vecsUnsafe(v).values(i))
             }
         }
-        testKMeansUnsafe(ua, objects, dims, centers, MODE, null)
+        ti = ti + testKMeansUnsafe(ua, objects, dims, centers, MODE, null)
         u.freeMemory(ua)
       }
 
-      t = System.nanoTime() - t
-      print(f"$t%10d,")
+      to = System.nanoTime() - to
+      print(f"$to%10d, $ti%10d, ")
 
       /* RECKLESS SERIALIZED */
       Random.setSeed(0)
       val vecsRecklessSerialized = Array.fill[KMVector](objects)(new KMVector(dims, Array.fill[Float](dims)(Random.nextFloat)))
-      t = System.nanoTime()
+      ti = 0
+      to = System.nanoTime()
 
       for (r <- Range(0, repeats))
-        testKMeansRecklessSerialized(vecsRecklessSerialized, dims, centers, MODE, null)
+        ti = ti + testKMeansRecklessSerialized(vecsRecklessSerialized, dims, centers, MODE, null)
 
-      t = System.nanoTime() - t
-      print(f"$t%10d,")
+      to = System.nanoTime() - to
+      print(f"$to%10d, $ti%10d, ")
 
       /* JNI */
       Random.setSeed(0)
       val vecsJNI = Array.fill[KMVector](objects)(new KMVector(dims, Array.fill[Float](dims)(Random.nextFloat)))
-      t = System.nanoTime()
+      ti = 0
+      to = System.nanoTime()
 
       for (r <- Range(0, repeats))
-        testKMeansJNI(vecsJNI, dims, centers, MODE, null)
+        ti = ti + testKMeansJNI(vecsJNI, dims, centers, MODE, null)
 
-      t = System.nanoTime() - t
-      print(f"$t%10d,")
+      to = System.nanoTime() - to
+      print(f"$to%10d, $ti%10d, ")
 
       /* RECKLESS */
       Random.setSeed(0)
       val vecsReckless = Array.fill[KMVector](objects)(new KMVector(dims, Array.fill[Float](dims)(Random.nextFloat)))
-      t = System.nanoTime()
+      ti = 0
+      to = System.nanoTime()
 
       for (r <- Range(0, repeats))
-        testKMeansReckless(vecsReckless, dims, centers, MODE, null)
+        ti = ti + testKMeansReckless(vecsReckless, dims, centers, MODE, null)
 
-      t = System.nanoTime() - t
-      print(f"$t%10d,")
+      to = System.nanoTime() - to
+      print(f"$to%10d, $ti%10d, ")
 
       //testKMeans(vecsReckless, dims, centers, 2, null)
       //testKMeans(vecsReckless, dims, centers, 3, null)

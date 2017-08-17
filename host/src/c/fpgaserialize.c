@@ -50,7 +50,7 @@ static inline uint64_t diff_time(struct timespec start) {
   return diff;
 }
 
-static inline void stop_time(struct timespec * start) {
+static inline uint64_t stop_time(struct timespec * start) {
   uint64_t diff;
   struct timespec end;
 
@@ -58,6 +58,7 @@ static inline void stop_time(struct timespec * start) {
   diff = BILLION * (end.tv_sec - start->tv_sec) + end.tv_nsec - start->tv_nsec;
   DEBUG_PRINT("%8llu, ", (long long unsigned int) diff);
   fflush(stdout);
+  return diff;
 }
 
 void print_output(int * membership, int objects)
@@ -80,7 +81,7 @@ void print_input(float ** vecs, int size, int dims) {
   }
 }
 
-JNIEXPORT void JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_fpgaserialize_00024_testKMeansJNI(
+JNIEXPORT jlong JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_fpgaserialize_00024_testKMeansJNI(
     JNIEnv * env,
     jobject me,
     jobjectArray in,
@@ -89,7 +90,7 @@ JNIEXPORT void JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_fpgaserialize_00024
     jint mode,
     jarray out)
 {
-  //struct timespec timer;
+  struct timespec timer;
 
   jclass klass = NULL;
   jfieldID valuesFID = NULL;
@@ -101,20 +102,20 @@ JNIEXPORT void JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_fpgaserialize_00024
 
   //print_input(cVecs, objCnt, dims);
 
+  start_time(&timer);
+
   int* membership = (int*) malloc(objCnt * sizeof(int));
   int iters;
   if (mode == 1)
     jni_kmeans(env, in, valuesFID, dims, objCnt, centers, 0.001f, membership, &iters);
-  //if (mode == 2)
-    //omp_kmeans(1, cVecs, dims, objCnt, centers, 0.001f, membership);
-  //if (mode == 3)
-    //cuda_kmeans(cVecs, dims, objCnt, centers, 0.001f, membership, &iters);
 
-  print_output(membership, objCnt);
+  return stop_time(&timer);
+
+  //print_output(membership, objCnt);
   //free membership
 }
 
-JNIEXPORT void JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_fpgaserialize_00024_testKMeansJNISerialized(
+JNIEXPORT jlong JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_fpgaserialize_00024_testKMeansJNISerialized(
     JNIEnv * env,
     jobject me,
     jobjectArray in,
@@ -123,7 +124,7 @@ JNIEXPORT void JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_fpgaserialize_00024
     jint mode,
     jarray out)
 {
-  //struct timespec timer;
+  struct timespec timer;
 
   //start_time(&timer);
 
@@ -157,6 +158,8 @@ JNIEXPORT void JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_fpgaserialize_00024
 
   //print_input(cVecs, objCnt, dims);
 
+  start_time(&timer);
+
   int* membership = (int*) malloc(objCnt * sizeof(int));
   int iters;
   if (mode == 1)
@@ -166,12 +169,14 @@ JNIEXPORT void JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_fpgaserialize_00024
   //if (mode == 3)
     //cuda_kmeans(cVecs, dims, objCnt, centers, 0.001f, membership, &iters);
 
-  print_output(membership, objCnt);
+  return stop_time(&timer);
+
+  //print_output(membership, objCnt);
   //free membership
 }
 
 
-JNIEXPORT void JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_fpgaserialize_00024_testKMeansUnsafe(
+JNIEXPORT jlong JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_fpgaserialize_00024_testKMeansUnsafe(
     JNIEnv * env,
     jobject me,
     jlong in,
@@ -181,7 +186,7 @@ JNIEXPORT void JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_fpgaserialize_00024
     jint mode,
     jarray out)
 {
-  //struct timespec timer;
+  struct timespec timer;
 
   //start_time(&timer);
 
@@ -195,6 +200,8 @@ JNIEXPORT void JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_fpgaserialize_00024
 
   //print_input(cVecs, objCnt, dims);
 
+  start_time(&timer);
+
   int* membership = (int*) malloc(objCnt * sizeof(int));
   int iters;
 
@@ -205,11 +212,13 @@ JNIEXPORT void JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_fpgaserialize_00024
   //if (mode == 3)
     //cuda_kmeans(cVecs, dims, objCnt, centers, 0.001f, membership, &iters);
 
-  print_output(membership, objCnt);
+  return stop_time(&timer);
+
+  //print_output(membership, objCnt);
   //free membership
 }
 
-JNIEXPORT void JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_fpgaserialize_00024_testKMeansRecklessSerialized(
+JNIEXPORT jlong JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_fpgaserialize_00024_testKMeansRecklessSerialized(
     JNIEnv * env,
     jobject me,
     jobjectArray in,
@@ -218,7 +227,7 @@ JNIEXPORT void JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_fpgaserialize_00024
     jint mode,
     jarray out)
 {
-  //struct timespec timer;
+  struct timespec timer;
 
   int i;
 
@@ -227,34 +236,36 @@ JNIEXPORT void JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_fpgaserialize_00024
   void * vecArrayOop = resolveJNIHandle(in);
   KMVector_Array vecArray = get_KMVector_Array(vecArrayOop);
 
-  float** cVecs = (float**) malloc(vecArray.size * sizeof(float*));
-  cVecs[0] = (float*)  malloc(vecArray.size * dims * sizeof(float));
-  for (i=1; i<vecArray.size; i++)
+  float** cVecs = (float**) malloc(vecArray._size * sizeof(float*));
+  cVecs[0] = (float*)  malloc(vecArray._size * dims * sizeof(float));
+  for (i=1; i<vecArray._size; i++)
     cVecs[i] = cVecs[i-1] + dims;
 
-  for (i=0;i < vecArray.size; i++) {
-    KMVector vec = get_KMVector(vecArray.values[i]);
-    memcpy(cVecs[i], vec.values.values, vec.values.size * sizeof(float));
+  for (i=0;i < vecArray._size; i++) {
+    KMVector vec = get_KMVector(vecArray._values[i]);
+    memcpy(cVecs[i], vec.values._values, vec.values._size * sizeof(float));
   }
 
   //stop_time(&timer);
 
   //print_input(cVecs, vecArray.size, dims);
 
-  int* membership = (int*) malloc(vecArray.size * sizeof(int));
+  start_time(&timer);
+  int* membership = (int*) malloc(vecArray._size * sizeof(int));
   int iters;
   if (mode == 1)
-    seq_kmeans(cVecs, dims, vecArray.size, centers, 0.001f, membership, &iters);
+    seq_kmeans(cVecs, dims, vecArray._size, centers, 0.001f, membership, &iters);
   //if (mode == 2)
     //omp_kmeans(1, cVecs, dims, vecArray.size, centers, 0.001f, membership);
   //if (mode == 3)
     //cuda_kmeans(cVecs, dims, vecArray.size, centers, 0.001f, membership, &iters);
+  return stop_time(&timer);
 
-  print_output(membership, vecArray.size);
+  //print_output(membership, vecArray._size);
   //free membership
 }
 
-JNIEXPORT void JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_fpgaserialize_00024_testKMeansReckless(
+JNIEXPORT jlong JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_fpgaserialize_00024_testKMeansReckless(
     JNIEnv * env,
     jobject me,
     jobjectArray in,
@@ -263,7 +274,7 @@ JNIEXPORT void JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_fpgaserialize_00024
     jint mode,
     jarray out)
 {
-  //struct timespec timer;
+  struct timespec timer;
 
   //start_time(&timer);
 
@@ -274,15 +285,18 @@ JNIEXPORT void JNICALL Java_org_tudelft_ewi_ce_fpgaserialize_fpgaserialize_00024
 
   //print_input(cVecs, vecArray.size, dims);
 
-  int* membership = (int*) malloc(vecArray.size * sizeof(int));
+  start_time(&timer);
+
+  int* membership = (int*) malloc(vecArray._size * sizeof(int));
   int iters;
   if (mode == 1)
-    reckless_kmeans(&vecArray, dims, vecArray.size, centers, 0.001f, membership, &iters);
+    reckless_kmeans(&vecArray, dims, vecArray._size, centers, 0.001f, membership, &iters);
   //if (mode == 2)
     //omp_kmeans(1, cVecs, dims, vecArray.size, centers, 0.001f, membership);
   //if (mode == 3)
     //cuda_kmeans(cVecs, dims, vecArray.size, centers, 0.001f, membership, &iters);
+  return stop_time(&timer);
 
-  print_output(membership, vecArray.size);
+  //print_output(membership, vecArray._size);
   //free membership
 }

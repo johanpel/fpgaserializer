@@ -4,11 +4,14 @@ import java.io.FileOutputStream
 
 class RecklessStruct(val sourceKlass: Class[_], val fields: Array[LayoutField], val isArray: Boolean)
 
+//TODO: when an array is of primitive type just skip getting a <type>_Array struct
+
 object RecklessGenerator {
 
   var headerQualifier: String = "inline"
   var sourceQualifier: String = "extern inline"
   var forwardQualifier: String = "inline"
+  var pre: String = "_"
 
   var sp: Int = 16
 
@@ -131,14 +134,14 @@ object RecklessGenerator {
         if (!forward) {
           str.append(s"struct _${cType}_Array {\n")
           if (ptrs) {
-            str.append(s"  int*                     size;\n")
+            str.append(s"  int*                     ${pre}size;\n")
           } else {
-            str.append(s"  int                      size;\n")
+            str.append(s"  int                      ${pre}size;\n")
           }
           if (struct.sourceKlass.getComponentType.isPrimitive) {
-            str.append(f"  ${cType + "*"}%-24s values;\n")
+            str.append(f"  ${cType + "*"}%-24s ${pre}values;\n")
           } else {
-            str.append(f"  ${cType + "**"}%-24s values;\n")
+            str.append(f"  ${cType + "**"}%-24s ${pre}values;\n")
           }
           str.append(s"};\n") // ${cType}_Array;\n")
           str.append("\n")
@@ -210,23 +213,23 @@ object RecklessGenerator {
           if (ptrs) {
             str.append(s"$headerQualifier $cName* get_$cName(void* obj) {\n")
             str.append(f"  ${cName + "* ret"}%-24s = ($cName*)malloc(sizeof($cName));\n")
-            str.append(f"  ${"ret->size"}%-24s = (int*)((char*)obj + 16);\n")
+            str.append(f"  ${"ret->" + pre + "size"}%-24s = (int*)((char*)obj + 16);\n")
           } else {
             str.append(s"$headerQualifier $cName get_$cName(void* obj) {\n")
             str.append(f"  ${cName + " ret"}%s;\n")
-            str.append(f"  ${"ret.size"}%-24s = *(int*)((char*)obj + 16);\n")
+            str.append(f"  ${"ret." + pre + "size"}%-24s = *(int*)((char*)obj + 16);\n")
           }
           if (struct.sourceKlass.getComponentType.isPrimitive) {
             if (ptrs) {
-              str.append(f"  ${"ret->values"}%-24s = ($cType*)((char*)obj + 24);\n")
+              str.append(f"  ${"ret->" + pre + "values"}%-24s = ($cType*)((char*)obj + 24);\n")
             } else {
-              str.append(f"  ${"ret.values"}%-24s = ($cType*)((char*)obj + 24);\n")
+              str.append(f"  ${"ret." + pre + "values"}%-24s = ($cType*)((char*)obj + 24);\n")
             }
           } else {
             if (ptrs) {
-              str.append(f"  ${"ret->values"}%-24s = ($cType**)((char*)obj + 24);\n")
+              str.append(f"  ${"ret->" + pre + "values"}%-24s = ($cType**)((char*)obj + 24);\n")
             } else {
-              str.append(f"  ${"ret.values"}%-24s = ($cType**)((char*)obj + 24);\n")
+              str.append(f"  ${"ret." + pre + "values"}%-24s = ($cType**)((char*)obj + 24);\n")
             }
           }
         } else {

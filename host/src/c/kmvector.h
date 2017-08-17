@@ -12,8 +12,8 @@ inline KMVector_Array get_KMVector_Array(void* obj);
 // STRUCTS: 
 
 struct _float_Array {
-  int                      size;
-  float*                   values;
+  int                      _size;
+  float*                   _values;
 };
 
 struct _KMVector {
@@ -22,16 +22,16 @@ struct _KMVector {
 };
 
 struct _KMVector_Array {
-  int                      size;
-  KMVector**               values;
+  int                      _size;
+  KMVector**               _values;
 };
 
 // INLINE FUNCTIONS: 
 
 inline float_Array get_float_Array(void* obj) {
   float_Array ret;
-  ret.size                 = *(int*)((char*)obj + 16);
-  ret.values               = (float*)((char*)obj + 24);
+  ret._size                = *(int*)((char*)obj + 16);
+  ret._values              = (float*)((char*)obj + 24);
   return ret;
 }
 
@@ -44,8 +44,8 @@ inline KMVector get_KMVector(void* obj) {
 
 inline KMVector_Array get_KMVector_Array(void* obj) {
   KMVector_Array ret;
-  ret.size                 = *(int*)((char*)obj + 16);
-  ret.values               = (KMVector**)((char*)obj + 24);
+  ret._size                = *(int*)((char*)obj + 16);
+  ret._values              = (KMVector**)((char*)obj + 24);
   return ret;
 }
 

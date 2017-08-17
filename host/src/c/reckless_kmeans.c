@@ -115,9 +115,9 @@ float** reckless_kmeans(KMVector_Array *vecArray,     /* in: [numObjs][numCoords
 
     /* pick first numClusters elements of objects[] as initial cluster centers*/
     for (i=0; i<numClusters; i++) {
-        KMVector vec = get_KMVector(vecArray->values[i]);
+        KMVector vec = get_KMVector(vecArray->_values[i]);
         for (j=0; j<numCoords; j++) {
-            clusters[i][j] = vec.values.values[j];
+            clusters[i][j] = vec.values._values[j];
         }
     }
 
@@ -139,8 +139,8 @@ float** reckless_kmeans(KMVector_Array *vecArray,     /* in: [numObjs][numCoords
         delta = 0.0;
         for (i=0; i<numObjs; i++) {
             /* find the array index of nestest cluster center */
-            KMVector vec = get_KMVector(vecArray->values[i]);
-            index = find_nearest_cluster(numClusters, numCoords, vec.values.values, clusters);
+            KMVector vec = get_KMVector(vecArray->_values[i]);
+            index = find_nearest_cluster(numClusters, numCoords, vec.values._values, clusters);
 
             /* if membership changes, increase delta by 1 */
             if (membership[i] != index) delta += 1.0;
@@ -151,7 +151,7 @@ float** reckless_kmeans(KMVector_Array *vecArray,     /* in: [numObjs][numCoords
             /* update new cluster centers : sum of objects located within */
             newClusterSize[index]++;
             for (j=0; j<numCoords; j++)
-                newClusters[index][j] += vec.values.values[j];
+                newClusters[index][j] += vec.values._values[j];
         }
 
         /* average the sum and replace old cluster centers with newClusters */
