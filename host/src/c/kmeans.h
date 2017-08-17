@@ -36,6 +36,10 @@
 #define _H_KMEANS
 
 #include <assert.h>
+#include <jni.h>
+
+#include "kmvector.h"
+
 
 #define msg(format, ...) do { fprintf(stderr, format, ##__VA_ARGS__); } while (0)
 #define err(format, ...) do { fprintf(stderr, format, ##__VA_ARGS__); exit(1); } while (0)
@@ -67,6 +71,8 @@ inline void checkLastCudaError() {
 float** omp_kmeans(int, float**, int, int, int, float, int*);
 float** seq_kmeans(float**, int, int, int, float, int*, int*);
 float** cuda_kmeans(float**, int, int, int, float, int*, int*);
+float** reckless_kmeans(KMVector_Array*, int, int, int, float, int*, int*);
+float** jni_kmeans(JNIEnv*, jobjectArray, jfieldID, int, int, int, float, int*, int*);
 
 float** file_read(int, char*, int*, int*);
 int     file_write(char*, int, int, int, float**, int*);

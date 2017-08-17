@@ -40,8 +40,11 @@ object fpgaserialize {
   @native def raiseSalary(obj: Any): Unit
   @native def testPictures(in: Array[SimpleImage], out: Array[SimpleImage]): Unit
   @native def testPicturesJNI(in: Array[SimpleImage], out: Array[SimpleImage]): Unit
-  @native def testKMeans(in: Array[KMVector], dims : Int, centers : Int, mode : Int, out: Array[Int]): Unit
+  @native def testKMeansRecklessSerialized(in: Array[KMVector], dims : Int, centers : Int, mode : Int, out: Array[Int]): Unit
+  @native def testKMeansReckless(in: Array[KMVector], dims : Int, centers : Int, mode : Int, out: Array[Int]): Unit
+  @native def testKMeansJNISerialized(in: Array[KMVector], dims : Int, centers : Int, mode : Int, out: Array[Int]): Unit
   @native def testKMeansJNI(in: Array[KMVector], dims : Int, centers : Int, mode : Int, out: Array[Int]): Unit
+  @native def testKMeansUnsafe(in: Long, objCnt: Int, dims : Int, centers : Int, mode : Int, out: Array[Int]): Unit
 
   var hi: Person = new Person("hi", 10)
 
@@ -268,19 +271,89 @@ object fpgaserialize {
   def testVectors(): Unit = {
     RecklessGenerator(classOf[Array[KMVector]], "kmvector")
 
-    for (r <- Range(0,32)) {
-      val objects = Math.pow(2, 4).toInt
-      val dims = 2
-      val centers = 4
+    val repeats = 64
 
-      val vecsReckless = Array.fill[KMVector](objects)(new KMVector(dims, Array.fill[Float](dims)(Random.nextFloat)))
+    for (e <- Range(3,16)) {
+      System.gc()
+      val objects = Math.pow(2, e).toInt
+      val dims = 32
+      val centers = 8
+
+      print(f"$objects%6d, $dims%4d, $centers%2d, ")
+
+      var t = System.nanoTime()
+
+      val MODE = 1
+
+      /* JNI SERIALIZED */
+      Random.setSeed(0)
+      val vecsJNISerialized = Array.fill[KMVector](objects)(new KMVector(dims, Array.fill[Float](dims)(Random.nextFloat)))
+      t = System.nanoTime()
+
+      for (r <- Range(0, repeats))
+        testKMeansJNISerialized(vecsJNISerialized, dims, centers, MODE, null)
+
+      t = System.nanoTime() - t
+      print(f"$t%10d,")
+
+      /* UNSAFE SERIALIZED*/
+      Random.setSeed(0)
+      val vecsUnsafe = Array.fill[KMVector](objects)(new KMVector(dims, Array.fill[Float](dims)(Random.nextFloat)))
+      t = System.nanoTime()
+
+      for (r <- Range(0, repeats)) {
+        val u = UnsafeInstance.get
+        val ua = u.allocateMemory(objects * dims * 4)
+        vecsUnsafe.indices.foreach {
+          v =>
+            vecsUnsafe(v).values.indices.foreach { i =>
+              u.putFloat(ua + (v * dims + i) * 4, vecsUnsafe(v).values(i))
+            }
+        }
+        testKMeansUnsafe(ua, objects, dims, centers, MODE, null)
+        u.freeMemory(ua)
+      }
+
+      t = System.nanoTime() - t
+      print(f"$t%10d,")
+
+      /* RECKLESS SERIALIZED */
+      Random.setSeed(0)
+      val vecsRecklessSerialized = Array.fill[KMVector](objects)(new KMVector(dims, Array.fill[Float](dims)(Random.nextFloat)))
+      t = System.nanoTime()
+
+      for (r <- Range(0, repeats))
+        testKMeansRecklessSerialized(vecsRecklessSerialized, dims, centers, MODE, null)
+
+      t = System.nanoTime() - t
+      print(f"$t%10d,")
+
+      /* JNI */
+      Random.setSeed(0)
       val vecsJNI = Array.fill[KMVector](objects)(new KMVector(dims, Array.fill[Float](dims)(Random.nextFloat)))
+      t = System.nanoTime()
 
-      testKMeans(vecsReckless, dims, centers, 1, null)
-      testKMeans(vecsReckless, dims, centers, 2, null)
+      for (r <- Range(0, repeats))
+        testKMeansJNI(vecsJNI, dims, centers, MODE, null)
+
+      t = System.nanoTime() - t
+      print(f"$t%10d,")
+
+      /* RECKLESS */
+      Random.setSeed(0)
+      val vecsReckless = Array.fill[KMVector](objects)(new KMVector(dims, Array.fill[Float](dims)(Random.nextFloat)))
+      t = System.nanoTime()
+
+      for (r <- Range(0, repeats))
+        testKMeansReckless(vecsReckless, dims, centers, MODE, null)
+
+      t = System.nanoTime() - t
+      print(f"$t%10d,")
+
+      //testKMeans(vecsReckless, dims, centers, 2, null)
       //testKMeans(vecsReckless, dims, centers, 3, null)
-      testKMeansJNI(vecsJNI, dims, centers, 1, null)
-      testKMeansJNI(vecsJNI, dims, centers, 2, null)
+
+      //testKMeansJNI(vecsJNI, dims, centers, 2, null)
       //testKMeansJNI(vecsJNI, dims, centers, 3, null)
       print("\n")
     }
@@ -296,9 +369,7 @@ object fpgaserialize {
     //testFigures()
     testVectors()
     //RecklessGenerator(classOf[GATKSAMRecord], "pairhmm")
-
   }
-
 }
 
 //println(ClassLayout.parseClass(classOf[Person], curLayouter).toPrintable)
