@@ -15,6 +15,8 @@ import org.broadinstitute.gatk.utils.genotyper.ReadLikelihoods
 import org.broadinstitute.gatk.utils.haplotype.Haplotype
 import org.broadinstitute.gatk.utils.sam.GATKSAMRecord
 
+import scala.collection.mutable.ArrayBuffer
+
 class SomeClass(val a: Int, val b: Int, val c: Array[Int])
 
 class Person(val name: String,
@@ -29,8 +31,6 @@ class Employee(var accountNumber: Int,
   extends Person(name, age)
 
 class SimpleImage(var pixels: Array[Int], var w: Int, var h: Int)
-
-class KMVector(val size : Int, val values : Array[Float])
 
 object fpgaserialize {
 
@@ -269,18 +269,19 @@ object fpgaserialize {
     print("\n")
   }
 
-  def testVectors(): Unit = {
+  def testKMeans(): Unit = {
     RecklessGenerator(classOf[Array[KMVector]], "kmvector")
+    RecklessGenerator(classOf[Array[ReadDataHolder]],"pairhmm")
 
     val repeats = 16
 
-    for (e <- Range(3,18)) {
+    for (e <- Range(4,20)) {
       System.gc()
       val objects = Math.pow(2, e).toInt
-      val dims = 16
-      val centers = 8
+      val dims = 32
+      val centers = 16
 
-      print(f"$objects%6d, $dims%4d, $centers%2d, ")
+      print(f"$objects%6d, $dims%4d, $centers%2d, $repeats%2d, ")
 
       var to = System.nanoTime()
 
@@ -290,7 +291,7 @@ object fpgaserialize {
 
       /* JNI SERIALIZED */
       Random.setSeed(0)
-      val vecsJNISerialized = Array.fill[KMVector](objects)(new KMVector(dims, Array.fill[Float](dims)(Random.nextFloat)))
+      var vecsJNISerialized = Array.fill[KMVector](objects)(new KMVector(dims, Array.fill[Float](dims)(Random.nextFloat)))
       ti = 0
       to = System.nanoTime()
 
@@ -300,9 +301,12 @@ object fpgaserialize {
       to = System.nanoTime() - to
       print(f"$to%10d, $ti%10d, ")
 
+      vecsJNISerialized = null
+      System.gc()
+
       /* UNSAFE SERIALIZED*/
       Random.setSeed(0)
-      val vecsUnsafe = Array.fill[KMVector](objects)(new KMVector(dims, Array.fill[Float](dims)(Random.nextFloat)))
+      var vecsUnsafe = Array.fill[KMVector](objects)(new KMVector(dims, Array.fill[Float](dims)(Random.nextFloat)))
       ti = 0
       to = System.nanoTime()
 
@@ -322,9 +326,12 @@ object fpgaserialize {
       to = System.nanoTime() - to
       print(f"$to%10d, $ti%10d, ")
 
+      vecsUnsafe = null
+      System.gc()
+
       /* RECKLESS SERIALIZED */
       Random.setSeed(0)
-      val vecsRecklessSerialized = Array.fill[KMVector](objects)(new KMVector(dims, Array.fill[Float](dims)(Random.nextFloat)))
+      var vecsRecklessSerialized = Array.fill[KMVector](objects)(new KMVector(dims, Array.fill[Float](dims)(Random.nextFloat)))
       ti = 0
       to = System.nanoTime()
 
@@ -334,9 +341,12 @@ object fpgaserialize {
       to = System.nanoTime() - to
       print(f"$to%10d, $ti%10d, ")
 
+      vecsRecklessSerialized = null
+      System.gc()
+
       /* JNI */
       Random.setSeed(0)
-      val vecsJNI = Array.fill[KMVector](objects)(new KMVector(dims, Array.fill[Float](dims)(Random.nextFloat)))
+      var vecsJNI = Array.fill[KMVector](objects)(new KMVector(dims, Array.fill[Float](dims)(Random.nextFloat)))
       ti = 0
       to = System.nanoTime()
 
@@ -346,9 +356,12 @@ object fpgaserialize {
       to = System.nanoTime() - to
       print(f"$to%10d, $ti%10d, ")
 
+      vecsJNI = null
+      System.gc()
+
       /* RECKLESS */
       Random.setSeed(0)
-      val vecsReckless = Array.fill[KMVector](objects)(new KMVector(dims, Array.fill[Float](dims)(Random.nextFloat)))
+      var vecsReckless = Array.fill[KMVector](objects)(new KMVector(dims, Array.fill[Float](dims)(Random.nextFloat)))
       ti = 0
       to = System.nanoTime()
 
@@ -358,11 +371,50 @@ object fpgaserialize {
       to = System.nanoTime() - to
       print(f"$to%10d, $ti%10d, ")
 
-      //testKMeans(vecsReckless, dims, centers, 2, null)
-      //testKMeans(vecsReckless, dims, centers, 3, null)
+      vecsReckless = null
+      System.gc()
 
-      //testKMeansJNI(vecsJNI, dims, centers, 2, null)
-      //testKMeansJNI(vecsJNI, dims, centers, 3, null)
+      /* JVM Scala */
+      /*
+      Random.setSeed(0)
+      var vecsJVM     = Array.fill[KMVector](objects)(new KMVector(dims, Array.fill[Float](dims)(Random.nextFloat)))
+
+      to = System.nanoTime()
+
+      var i = 1
+      for (r <- Range(0, repeats)) {
+        var assignments = Array.fill[Int](objects)(0)
+        var centroids = Array.fill[KMVector](centers)(null)
+        (0 until centers).foreach(i => centroids(i) = vecsJVM(i).copy)
+        var delta = Float.PositiveInfinity
+        i = 1
+        //KMVector.printIteration(objects, centers, vecsJVM, assignments, centroids)
+        do {
+          delta = KMVector.assignPoints(objects, centers, vecsJVM, assignments, centroids)
+          KMVector.moveCentroids(objects, centers, vecsJVM, assignments, centroids)
+          //KMVector.printIteration(objects, centers, vecsJVM, assignments, centroids)
+          i = i + 1
+        } while (delta / centers > 0.001f)
+      }
+
+      to = System.nanoTime() - to
+      print(f"$to%10d, ")
+      */
+
+      /* JVM Java */
+      Random.setSeed(0)
+      var vecsJVMJ = Array.fill[KMVectorJava](objects)(new KMVectorJava(dims, Array.fill[Float](dims)(Random.nextFloat)))
+
+      to = System.nanoTime()
+
+      KMVectorJava.cluster(vecsJVMJ,objects,centers,repeats,0.001f)
+
+      to = System.nanoTime() - to
+      print(f"$to%10d, ")
+
+      vecsJVMJ = null
+      System.gc()
+
       print("\n")
     }
   }
@@ -375,7 +427,7 @@ object fpgaserialize {
   def main(args: Array[String]): Unit = {
     //testEmployees()
     //testFigures()
-    testVectors()
+    testKMeans()
     //RecklessGenerator(classOf[GATKSAMRecord], "pairhmm")
   }
 }
