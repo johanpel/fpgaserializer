@@ -14,6 +14,7 @@ import scala.util.Random
 import org.broadinstitute.gatk.utils.genotyper.ReadLikelihoods
 import org.broadinstitute.gatk.utils.haplotype.Haplotype
 import org.broadinstitute.gatk.utils.sam.GATKSAMRecord
+import org.broadinstitute.gatk.nativebindings.pairhmm.{HaplotypeDataHolder, ReadDataHolder}
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -271,7 +272,7 @@ object fpgaserialize {
 
   def testKMeans(): Unit = {
     RecklessGenerator(classOf[Array[KMVector]], "kmvector")
-    RecklessGenerator(classOf[Array[ReadDataHolder]],"pairhmm")
+    RecklessGenerator(classOf[Array[HaplotypeDataHolder]],"pairhmm")
 
     val repeats = 16
 

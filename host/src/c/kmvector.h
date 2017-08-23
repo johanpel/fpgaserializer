@@ -50,4 +50,4 @@ inline KMVector_Array get_KMVector_Array(void* obj) {
 }
 
 
-#endif //SRC_RECKLESS_H
+#endif //SRC_KMVECTOR_H

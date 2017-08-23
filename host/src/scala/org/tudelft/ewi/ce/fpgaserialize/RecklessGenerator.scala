@@ -46,7 +46,7 @@ object RecklessGenerator {
 
     headerFOS.write("// INLINE FUNCTIONS: \n\n".getBytes)
     headerFOS.write(source.getBytes)
-    headerFOS.write(RecklessGenerator.headerFooter.getBytes)
+    headerFOS.write(RecklessGenerator.headerFooter(libName).getBytes)
 
     cFOS.write(RecklessGenerator.sourceHeader(libName).getBytes)
     cFOS.write(declarations.getBytes)
@@ -63,8 +63,8 @@ object RecklessGenerator {
       "typedef char byte;\n\n"
   }
 
-  val headerFooter: String = "" +
-    "\n#endif //SRC_RECKLESS_H\n"
+  def headerFooter(libName: String): String = "" +
+    "\n#endif //SRC_" + libName.toUpperCase + "_H\n"
 
   def sourceHeader(libName: String): String = "" +
     "#include <stdlib.h>\n" +
