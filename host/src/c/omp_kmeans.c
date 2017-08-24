@@ -53,10 +53,18 @@ int find_nearest_cluster(int     numClusters, /* no. clusters */
 
     /* find the cluster id that has min distance to object */
     index    = 0;
+#ifdef USE_AVX
+    min_dist = euclidean_intrinsic_float(numCoords, object, clusters[0]);
+#else
     min_dist = euclid_dist_2(numCoords, object, clusters[0]);
+#endif
 
     for (i=1; i<numClusters; i++) {
+#ifdef USE_AVX
+        dist = euclidean_intrinsic_float(numCoords, object, clusters[i]);
+#else
         dist = euclid_dist_2(numCoords, object, clusters[i]);
+#endif
         /* no need square root */
         if (dist < min_dist) { /* find the min and its array index */
             min_dist = dist;

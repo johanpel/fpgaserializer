@@ -11,10 +11,6 @@ import org.openjdk.jol.info.ClassLayout
 import org.openjdk.jol.layouters.CurrentLayouter
 
 import scala.util.Random
-import org.broadinstitute.gatk.utils.genotyper.ReadLikelihoods
-import org.broadinstitute.gatk.utils.haplotype.Haplotype
-import org.broadinstitute.gatk.utils.sam.GATKSAMRecord
-import org.broadinstitute.gatk.nativebindings.pairhmm.{HaplotypeDataHolder, ReadDataHolder}
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -272,15 +268,14 @@ object fpgaserialize {
 
   def testKMeans(): Unit = {
     RecklessGenerator(classOf[Array[KMVector]], "kmvector")
-    RecklessGenerator(classOf[Array[HaplotypeDataHolder]],"pairhmm")
 
-    val repeats = 16
+    val repeats = 32
 
-    for (e <- Range(4,20)) {
+    for (e <- Range(5,17)) {
       System.gc()
       val objects = Math.pow(2, e).toInt
-      val dims = 32
-      val centers = 16
+      val dims = 128
+      val centers = 32
 
       print(f"$objects%6d, $dims%4d, $centers%2d, $repeats%2d, ")
 
@@ -288,7 +283,7 @@ object fpgaserialize {
 
       var ti = 0L
 
-      val MODE = 1
+      val MODE = 2
 
       /* JNI SERIALIZED */
       Random.setSeed(0)

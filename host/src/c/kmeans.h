@@ -37,6 +37,7 @@
 
 #include <assert.h>
 #include <jni.h>
+#include <immintrin.h>
 
 #include "kmvector.h"
 
@@ -79,6 +80,43 @@ int     file_write(char*, int, int, int, float**, int*);
 
 
 double  wtime(void);
+
+// Intrinsics can be faster compiled than manual
+#define USE_AVX
+
+static inline float euclidean_baseline_float(const int n, const float* x, const float* y){
+  float result = 0.f;
+  for(int i = 0; i < n; ++i){
+    const float num = x[i] - y[i];
+    result += num * num;
+  }
+  return result;
+}
+
+static inline float euclidean_intrinsic_float(int n, const float* x, const float* y){
+  float result=0;
+  __m256 euclidean = _mm256_setzero_ps();
+  //__m128 euclidean = _mm_setzero_ps();
+  for (; n>3; n-=4) {
+    const __m256 a = _mm256_loadu_ps(x);
+    const __m256 b = _mm256_loadu_ps(y);
+    const __m256 a_minus_b = _mm256_sub_ps(a,b);
+    const __m256 a_minus_b_sq = _mm256_mul_ps(a_minus_b, a_minus_b);
+    euclidean = _mm256_add_ps(euclidean, a_minus_b_sq);
+    x+=4;
+    y+=4;
+  }
+  const __m256 zero = _mm256_setzero_ps();
+  const __m256 sum = _mm256_hadd_ps(euclidean, zero);
+  // with SSE3, we could use hadd_ps, but the difference is negligible
+
+  _mm_store_ss(&result, _mm256_castps256_ps128(sum));
+  //    _mm_empty();
+  if (n)
+    result += euclidean_baseline_float(n, x, y);  // remaining 1-3 entries
+  return result;
+}
+
 
 extern int _debug;
 
